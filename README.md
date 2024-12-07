@@ -1,0 +1,2 @@
+# virtual-camp
+VirtualCampBot
