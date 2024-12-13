@@ -1,12 +1,14 @@
 import os
-import sys
+import json
+import pika
+import uuid
 import logging
 from logging import handlers
 from aiohttp import web
 from aiogram import Bot, Dispatcher, Router
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 from aiogram.utils.markdown import hbold
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
@@ -19,6 +21,7 @@ LOG_FORMAT = (
     "%(filename)s:%(lineno)d #%(levelname)-8s [%(asctime)s] - %(name)s - %(message)s"
 )
 LOG_BACKUP_COUNT = 14
+OUTGOING_QUEUE = "tasks_queue"
 
 # Bot and Webserver settings
 TOKEN = config["BOT"]["TOKEN"]
@@ -45,12 +48,50 @@ logger = logging.getLogger(__name__)
 router = Router()
 
 
+# Publish message
+def publish_message(msg):
+    logger.info("Publishing message...")
+    message_json = json.dumps(msg)
+    connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
+    channel = connection.channel()
+    channel.queue_declare(queue=OUTGOING_QUEUE)
+    channel.basic_publish(
+        exchange="",
+        routing_key=OUTGOING_QUEUE,
+        body=message_json,
+    )
+    connection.close()
+    logger.info("Done publishing message!")
+
+
 @router.message(CommandStart())
 async def command_start_handler(message: Message) -> None:
     """
     This handler receives messages with `/start` command
     """
-    await message.answer(f"Hello, {hbold(message.from_user.full_name)}!")
+    await message.answer(
+        f"Hello, {hbold(message.from_user.full_name)}!\n"
+        "Use /generate to start.\n"
+        "Use /help to get help."
+    )
+
+
+@router.message(Command(commands=["help"]))
+async def process_help_command(message: Message) -> None:
+    """
+    This handler receives messages with `/help` command
+    """
+    await message.answer(f"Help command accepted.\nUse /generate to start.")
+
+
+@router.message(Command(commands=["generate"]))
+async def process_generate_command(message: Message) -> None:
+    """
+    This handler receives messages with `/generate` command
+    """
+    msg = {"uuid": str(uuid.uuid4()), "job": "all"}
+    publish_message(msg)
+    await message.answer(f"Generate command accepted, wait...")
 
 
 @router.message()
