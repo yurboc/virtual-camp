@@ -1,14 +1,12 @@
 development:
-  # Log config
   LOG:
-    QUEUE_NOTIFIER:
-      FILE: "log/queue_notifiers.log"
+    NOTIFIER:
+      FILE: "log/notifier.log"
       LEVEL: INFO
-    VIRTUAL_CAMP_BOT:
-      FILE: "log/virtual_camp_bot.log"
+    BOT:
+      FILE: "log/bot.log"
       LEVEL: INFO
 
-  # Bot config
   BOT:
     TOKEN: "your-token"
     WEB_SERVER_HOST: "127.0.0.1"
@@ -16,8 +14,8 @@ development:
     WEBHOOK_PATH: "/webhook"
     WEBHOOK_SECRET: "your-secret"
     BASE_WEBHOOK_URL: "https://your-domain.ru"
+    ADMIN: your-admin-telegram-id
 
-  # DB config
   DB:
     TYPE: postgresql+asyncpg
     NAME: your-db

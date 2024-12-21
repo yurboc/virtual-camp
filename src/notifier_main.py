@@ -1,13 +1,17 @@
+import asyncio
 import logging
 import pika
 import os
 import json
-from logging import handlers
-from aiogram import Bot, Dispatcher
+import logging.handlers
+from aiogram import Bot
 from config.config import config
 
-LOG_FILE = config["LOG"]["QUEUE_NOTIFIER"]["FILE"]
-LOG_LEVEL = config["LOG"]["QUEUE_NOTIFIER"]["LEVEL"]
+# Settings
+TOKEN = config["BOT"]["TOKEN"]
+ADMIN_ID = config["BOT"]["ADMIN"]
+LOG_FILE = config["LOG"]["NOTIFIER"]["FILE"]
+LOG_LEVEL = config["LOG"]["NOTIFIER"]["LEVEL"]
 LOG_FORMAT = (
     "%(filename)s:%(lineno)d #%(levelname)-8s [%(asctime)s] - %(name)s - %(message)s"
 )
@@ -28,25 +32,56 @@ logging.basicConfig(
 logging.getLogger("pika").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
+bot = Bot(token=TOKEN)
+
+
+# Send message to Telegram
+async def send_message(chat_id, text):
+    logger.info("Prepare Telegram message...")
+    try:
+        await bot.send_message(chat_id=chat_id, text=text)
+    except:
+        logger.warning("Error sending Telegram message", exc_info=True)
+    await bot.session.close()
+    logger.info("Telegram message sent!")
+
 
 # Handle new message
 def on_new_message(ch, method, properties, body):
     # Decode incoming message
-    logger.info("Got new message...")
+    logger.info("Got new RabbitMQ message...")
     try:
         msg = json.loads(body.decode())
         msg_uuid = msg.get("uuid", "no_uuid")
     except:
         logger.warning(
-            f"Error decoding incoming message: {body.decode()}", exc_info=True
+            f"Error decoding incoming RabbitMQ message: {body.decode()}", exc_info=True
         )
         ch.basic_ack(delivery_tag=method.delivery_tag)
         return
     # Get message UUID
-    logger.info(f"Got message with UUID '{msg_uuid}'...")
+    logger.info(f"Got RabbitMQ message with UUID '{msg_uuid}'...")
     logger.info(body.decode())
+    # Prepare message text
+    msg_text = "Получен результат генерации:\n\n"
+    if msg.get("uuid"):
+        msg_text += f"UUID: {msg['uuid']}\n"
+    if msg.get("job"):
+        msg_text += f"Задание: {msg['job']}\n"
+    if msg.get("table"):
+        msg_text += f"Таблица: {msg['table']}\n"
+    if msg.get("result"):
+        msg_text += f"Результат: {msg['result']}\n"
+    if msg.get("uuuuhz"):
+        msg_text += f"Хзхз: {msg['uuuuhz']}\n"
+    asyncio.run(
+        send_message(
+            chat_id=ADMIN_ID,
+            text=msg_text,
+        )
+    )
     ch.basic_ack(delivery_tag=method.delivery_tag)
-    logger.info("Done message processing!")
+    logger.info("Done RabbitMQ message processing!")
 
 
 # MAIN

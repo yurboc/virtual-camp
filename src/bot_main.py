@@ -1,27 +1,30 @@
+import asyncio
 import os
-import json
-import pika
-import uuid
 import logging
-from logging import handlers
+import logging.handlers
+import aiohttp
 from aiohttp import web
-from aiogram import Bot, Dispatcher, Router
+from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
+from aiogram.fsm.storage.redis import RedisStorage, Redis
 from aiogram.enums import ParseMode
-from aiogram.filters import CommandStart, Command
-from aiogram.types import Message
-from aiogram.utils.markdown import hbold
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
+from sqlalchemy import URL
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncEngine
+from middleware.outer import DatabaseMiddleware, StoreAllUpdates, CheckUserType
+from middleware.inner import StoreAllMessages
+from handlers import other_handlers, user_handlers
+from storage import db_schema
 from config.config import config
 
 
-LOG_FILE = config["LOG"]["VIRTUAL_CAMP_BOT"]["FILE"]
-LOG_LEVEL = config["LOG"]["VIRTUAL_CAMP_BOT"]["LEVEL"]
+# Logging settings
+LOG_FILE = config["LOG"]["BOT"]["FILE"]
+LOG_LEVEL = config["LOG"]["BOT"]["LEVEL"]
 LOG_FORMAT = (
     "%(filename)s:%(lineno)d #%(levelname)-8s [%(asctime)s] - %(name)s - %(message)s"
 )
 LOG_BACKUP_COUNT = 14
-OUTGOING_QUEUE = "tasks_queue"
 
 # Bot and Webserver settings
 TOKEN = config["BOT"]["TOKEN"]
@@ -42,73 +45,11 @@ logging.basicConfig(
         ),
     ],
 )
+logging.getLogger("pika").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
-# All handlers should be attached to the Router (or Dispatcher)
-router = Router()
 
-
-# Publish message
-def publish_message(msg):
-    logger.info("Publishing message...")
-    message_json = json.dumps(msg)
-    connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
-    channel = connection.channel()
-    channel.queue_declare(queue=OUTGOING_QUEUE)
-    channel.basic_publish(
-        exchange="",
-        routing_key=OUTGOING_QUEUE,
-        body=message_json,
-    )
-    connection.close()
-    logger.info("Done publishing message!")
-
-
-@router.message(CommandStart())
-async def command_start_handler(message: Message) -> None:
-    """
-    This handler receives messages with `/start` command
-    """
-    await message.answer(
-        f"Hello, {hbold(message.from_user.full_name)}!\n"
-        "Use /generate to start.\n"
-        "Use /help to get help."
-    )
-
-
-@router.message(Command(commands=["help"]))
-async def process_help_command(message: Message) -> None:
-    """
-    This handler receives messages with `/help` command
-    """
-    await message.answer(f"Help command accepted.\nUse /generate to start.")
-
-
-@router.message(Command(commands=["generate"]))
-async def process_generate_command(message: Message) -> None:
-    """
-    This handler receives messages with `/generate` command
-    """
-    msg = {"uuid": str(uuid.uuid4()), "job": "all"}
-    publish_message(msg)
-    await message.answer(f"Generate command accepted, wait...")
-
-
-@router.message()
-async def echo_handler(message: Message) -> None:
-    """
-    Handler will forward receive a message back to the sender
-
-    By default, message handler will handle all message types (like text, photo, sticker etc.)
-    """
-    try:
-        # Send a copy of the received message
-        await message.send_copy(chat_id=message.chat.id)
-    except TypeError:
-        # But not all the types is supported to be copied so need to handle it
-        await message.answer("Nice try!")
-
-
+# Startup handler
 async def on_startup(bot: Bot) -> None:
     await bot.set_webhook(
         f"{BASE_WEBHOOK_URL}{WEBHOOK_PATH}", secret_token=WEBHOOK_SECRET
@@ -116,19 +57,46 @@ async def on_startup(bot: Bot) -> None:
 
 
 # MAIN
-def main() -> None:
+async def async_main() -> None:
     logger.info(f"Starting VirtualCampBot with PID={os.getpid()}...")
 
-    # Dispatcher is a root router
-    dp = Dispatcher()
-    # ... and all other routers should be attached to Dispatcher
-    dp.include_router(router)
+    # Setup DB
+    db_url = URL.create(
+        config["DB"]["TYPE"],
+        username=config["DB"]["USERNAME"],
+        password=config["DB"]["PASSWORD"],
+        host=config["DB"]["HOST"],
+        database=config["DB"]["NAME"],
+    )
+    async_engine: AsyncEngine = create_async_engine(db_url, echo=False)
+
+    # Create DB structure
+    async with async_engine.begin() as conn:
+        # DROP TABLES: await conn.run_sync(db_schema.Base.metadata.drop_all)
+        await conn.run_sync(db_schema.Base.metadata.create_all)
+
+    # Create internal objects
+    redis = Redis(host="localhost")
+    storage = RedisStorage(redis=redis)
+    async_session = async_sessionmaker(async_engine, expire_on_commit=False)
+    bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+    dp = Dispatcher(storage=storage, engine=async_engine)
+
+    # Add routers
+    dp.include_router(user_handlers.router)
+    dp.include_router(other_handlers.router)
+
+    # Add middleware
+    dp.update.outer_middleware(DatabaseMiddleware(session=async_session))
+    dp.update.outer_middleware(StoreAllUpdates())
+    dp.message.outer_middleware(CheckUserType())
+    dp.message.middleware(StoreAllMessages())
+
+    # Configure webhook
+    logger.info("Setting up webhook...")
 
     # Register startup hook to initialize webhook
     dp.startup.register(on_startup)
-
-    # Initialize Bot instance with default bot properties which will be passed to all API calls
-    bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 
     # Create aiohttp.web.Application instance
     app = web.Application()
@@ -141,6 +109,7 @@ def main() -> None:
         bot=bot,
         secret_token=WEBHOOK_SECRET,
     )
+
     # Register webhook handler on application
     webhook_requests_handler.register(app, path=WEBHOOK_PATH)
 
@@ -148,7 +117,14 @@ def main() -> None:
     setup_application(app, dp, bot=bot)
 
     # And finally start webserver
-    web.run_app(app, host=WEB_SERVER_HOST, port=WEB_SERVER_PORT)
+    # web.run_app(app, host=WEB_SERVER_HOST, port=WEB_SERVER_PORT)
+    runner = aiohttp.web.AppRunner(app)
+    await runner.setup()
+    site = aiohttp.web.TCPSite(runner, host=WEB_SERVER_HOST, port=WEB_SERVER_PORT)
+    await site.start()
+
+    # wait forever
+    await asyncio.Event().wait()
 
     # Stop bot
     logger.info("Finished VirtualCampBot!")
@@ -156,4 +132,4 @@ def main() -> None:
 
 # Entry point
 if __name__ == "__main__":
-    main()
+    asyncio.run(async_main())
