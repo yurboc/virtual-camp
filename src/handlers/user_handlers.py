@@ -50,17 +50,26 @@ async def process_help_command(message: Message) -> None:
     """
     This handler receives messages with `/help` command
     """
-    await message.answer(f"Справка:\nИспользуйте команду /generate чтобы начать генерацию таблиц.")
+    await message.answer(
+        f"Справка:\nИспользуйте команду /generate чтобы начать генерацию таблиц."
+    )
 
 
 @router.message(Command(commands=["generate"]))
-async def process_generate_command(message: Message) -> None:
+async def process_generate_command(
+    message: Message, db: Database, user_id: int
+) -> None:
     """
     This handler receives messages with `/generate` command
     """
-    msg = {"uuid": str(uuid.uuid4()), "job": "all"}
+    task_uuid = str(uuid.uuid4())
+    user = await db.user_by_tg_id(user_id)
+    task = await db.task_add(task_uuid=task_uuid, user=user)
+    msg = {"uuid": task_uuid, "task_id": task.id, "job": "all"}
     publish_message(msg)
-    await message.answer(f"Генерация запущена, ждите...")
+    await message.answer(
+        f"Генерация запущена, ждите...\nUUID: {task_uuid}\nID задания: {task.id}"
+    )
 
 
 @router.message()

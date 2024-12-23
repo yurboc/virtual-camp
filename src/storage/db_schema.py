@@ -17,7 +17,7 @@ class Base(DeclarativeBase):
 
 class TgUpdate(Base):
     __tablename__ = "tg_all_updates"
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, unique=True)
     ts: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP, nullable=False, server_default=func.CURRENT_TIMESTAMP()
     )
@@ -26,7 +26,7 @@ class TgUpdate(Base):
 
 class TgMessage(Base):
     __tablename__ = "tg_all_messages"
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, unique=True)
     ts: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP, nullable=False, server_default=func.CURRENT_TIMESTAMP()
     )
@@ -37,7 +37,7 @@ class TgMessage(Base):
 
 class TgUser(Base):
     __tablename__ = "tg_users"
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, unique=True)
     tg_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, unique=True)
     tg_first_name: Mapped[Optional[str]] = mapped_column(String(60))
     tg_last_name: Mapped[Optional[str]] = mapped_column(String(60))
@@ -56,3 +56,33 @@ class TgUser(Base):
         server_default=func.CURRENT_TIMESTAMP(),
         onupdate=func.CURRENT_TIMESTAMP(),
     )
+    tasks: Mapped[List["TgTask"]] = relationship("TgTask", back_populates="user")
+    notifications: Mapped[List["TgNotification"]] = relationship(
+        "TgNotification", back_populates="user"
+    )
+
+
+class TgTask(Base):
+    __tablename__ = "tg_tasks"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, unique=True)
+    ts: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP,
+        nullable=False,
+        server_default=func.CURRENT_TIMESTAMP(),
+    )
+    uuid: Mapped[str]
+    user: Mapped[TgUser] = relationship("TgUser", back_populates="tasks")
+    user_id: Mapped[int] = mapped_column(ForeignKey("tg_users.id"))
+
+
+class TgNotification(Base):
+    __tablename__ = "tg_notifications"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, unique=True)
+    ts: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP,
+        nullable=False,
+        server_default=func.CURRENT_TIMESTAMP(),
+    )
+    message: Mapped[str]
+    user: Mapped[TgUser] = relationship("TgUser", back_populates="notifications")
+    user_id: Mapped[int] = mapped_column(ForeignKey("tg_users.id"))

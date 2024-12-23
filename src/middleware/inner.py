@@ -17,7 +17,7 @@ class StoreAllMessages(BaseMiddleware):
         logger.info("Begin StoreAllMessages")
         db: Optional[Database] = data.get("db")
         if db and type(event) is Message:
-            await db.store_message(event)
+            await db.message_to_log(event)
         result = await handler(event, data)
         logger.info("End StoreAllMessages")
         return result

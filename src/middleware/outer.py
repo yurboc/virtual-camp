@@ -37,7 +37,7 @@ class StoreAllUpdates(BaseMiddleware):
         logger.info("Begin StoreAllUpdates")
         db: Database | None = data.get("db")
         if db:
-            await db.store_event(event)
+            await db.event_to_log(event)
         result = await handler(event, data)
         logger.info("End StoreAllUpdates")
         return result
@@ -54,7 +54,7 @@ class CheckUserType(BaseMiddleware):
         db: Database | None = data.get("db")
         user = data.get("event_from_user")
         if db and user and user.id:
-            user_type = await db.check_user(tg_user=user)
+            user_type = await db.user_status(tg_user=user)
             data["user_type"] = list(user_type.split())
             data["user_id"] = user.id
             logger.info(f"CheckUserType for user {user.id} is {data['user_type']}")
