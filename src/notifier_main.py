@@ -4,7 +4,7 @@ import logging
 import logging.handlers
 from sqlalchemy import URL
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from config.config import config
+from utils.config import config
 from storage.db_schema import Base
 from modules.async_queue_client import AsyncQueueClient
 

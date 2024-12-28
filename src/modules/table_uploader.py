@@ -2,20 +2,22 @@ import json
 import ftplib
 import os
 import logging
+from utils.config import config
 
 logger = logging.getLogger(__name__)
 
 
 class TableUploader:
-    def __init__(self, credentials):
-        self.credentials = credentials
+    def __init__(self):
+        self.session = None
 
     def start(self):
         # Read credentials from file
         logger.info(f"Authenticating to FTP...")
-        self.cred = json.load(open(self.credentials))
         self.session = ftplib.FTP(
-            self.cred["server"], self.cred["username"], self.cred["password"]
+            config["CRED_FTP"]["server"],
+            config["CRED_FTP"]["username"],
+            config["CRED_FTP"]["password"],
         )
         logger.info("Done authenticating to FTP")
 

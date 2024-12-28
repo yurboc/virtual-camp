@@ -1,33 +1,38 @@
-from oauth2client.service_account import ServiceAccountCredentials
-from dateutil import parser
 import datetime
 import json
 import httplib2
 import apiclient.discovery
 import logging
+from google.oauth2.service_account import Credentials
+from dateutil import parser
+from utils.config import config
 
 logger = logging.getLogger(__name__)
 
 
 class TableConverter:
-    def __init__(self, credentials):
-        self.credentials = credentials
+    def __init__(self):
+        self.spreadsheetId = None
+        self.spreadsheetRange = None
+        self.rawData = None
 
     def auth(self):
         # Read credentials from file
         logger.info(f"Authenticating to Google...")
-        cred = ServiceAccountCredentials.from_json_keyfile_name(
-            self.credentials,
-            [
+        credentials = Credentials.from_service_account_info(
+            config["CRED_GOOGLE"],
+            scopes=[
                 "https://www.googleapis.com/auth/spreadsheets",
                 "https://www.googleapis.com/auth/drive",
             ],
         )
-        # Authorize into system
-        httpAuth = cred.authorize(httplib2.Http())
         # Select service modules
-        self.service_sheets = apiclient.discovery.build("sheets", "v4", http=httpAuth)
-        self.service_drive = apiclient.discovery.build("drive", "v3", http=httpAuth)
+        self.service_sheets = apiclient.discovery.build(
+            "sheets", "v4", credentials=credentials
+        )
+        self.service_drive = apiclient.discovery.build(
+            "drive", "v3", credentials=credentials
+        )
         logger.info("Done authenticating to Google")
 
     def setSpreadsheetId(self, spreadsheetId):

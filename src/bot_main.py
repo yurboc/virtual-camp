@@ -15,7 +15,7 @@ from middleware.outer import DatabaseMiddleware, StoreAllUpdates, CheckUserType
 from middleware.inner import StoreAllMessages
 from handlers import other_handlers, user_handlers
 from storage import db_schema
-from config.config import config
+from utils.config import config
 
 
 # Logging settings

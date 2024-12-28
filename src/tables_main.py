@@ -4,12 +4,11 @@ import pika
 import logging
 import logging.handlers
 from modules import table_converter, table_uploader
+from utils.config import config
 
 # Settings
 LOG_FILE = "log/converter.log"
 LOG_BACKUP_COUNT = 14
-CRED_GOOGLE = "credentials/cred-google.json"
-CRED_FTP = "credentials/cred-ftp.json"
 OUT_DIR = "output"
 CONFIG_FILE = "config.json"
 INCOMING_QUEUE = "tasks_queue"
@@ -93,8 +92,8 @@ def on_new_task_message(ch, method, properties, body):
         return
     # Prepare converter and uploader
     logger.info(f"Prepare job '{msg_job}'...")
-    converter = table_converter.TableConverter(CRED_GOOGLE)
-    uploader = table_uploader.TableUploader(CRED_FTP)
+    converter = table_converter.TableConverter()
+    uploader = table_uploader.TableUploader()
     converter.auth()
     uploader.start()
     config = load_config(CONFIG_FILE)
