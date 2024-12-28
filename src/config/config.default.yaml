@@ -23,6 +23,7 @@ development:
     server: "your_server_address_here"
     username: "your_user_name_here"
     password: "your_password_here"
+    target_path: "/www/your_target_path/"
 
   BOT:
     TOKEN: "your_token"

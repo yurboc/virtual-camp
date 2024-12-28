@@ -25,8 +25,8 @@ class TableUploader:
         file_name = table_params["output_file"]
         logger.info(f"Uploading file: {file_name}")
         src_file = os.path.join(local_dir, file_name)
-        dst_file = os.path.basename(table_params["remote_file"])
-        dst_path = os.path.dirname(table_params["remote_file"])
+        dst_file = table_params["output_file"]
+        dst_path = config["CRED_FTP"]["target_path"]
         self.session.cwd(dst_path)
         self.session.storbinary("STOR " + dst_file, open(src_file, "rb"))
         logger.info(f"Uploaded file: {file_name}")

@@ -16,6 +16,8 @@ class AsyncMessageSender:
     # Convert RabbitMQ message
     def convert_rabbitmq_message(self, body):
         logger.info("Convert RabbitMQ incoming message...")
+        self.task_id = None
+        self.msg_text = None
         try:
             # Decode message
             self.msg = json.loads(body.decode())
@@ -41,11 +43,12 @@ class AsyncMessageSender:
     # Store notification to DB and send to Telegram
     async def create_notification(self):
         # Check task data
-        task_id = self.task_id
-        text = self.msg_text
-        if not task_id or not text:
+        logger.info("Checking notification data...")
+        if not self.task_id or not self.msg_text:
             logger.warning("Error creating notification: task_id or text not found")
             return
+        task_id = self.task_id
+        text = self.msg_text
 
         # Process notification
         logger.info(f"Prepare notification for task={task_id}...")

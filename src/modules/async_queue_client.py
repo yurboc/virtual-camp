@@ -60,6 +60,7 @@ class AsyncQueueClient:
     async def on_message_async(self, channel, method, properties, body):
         logger.info("Async handler started...")
         self.sender.convert_rabbitmq_message(body)
+        logger.info("Create notification...")
         await self.sender.create_notification()
         channel.basic_ack(delivery_tag=method.delivery_tag)
         logger.info("Message acked")

@@ -1,0 +1,88 @@
+--- # FST-OTM tables
+
+- generator_name: sportsmeny
+  title: Спортсмены Москвы
+  target_url: https://fst-otm.net/index/sportsmeny_moskvy_sportivnyj_turizm/0-42
+  output_file: static_json_data.js
+  spreadsheetId: 1bkbojWWjPXLkOXGd6yZRqDVlsyXurWxL3ePQzvTM3Jc
+  range: Сводный!A2:M
+  fields:
+  - id
+  - name
+  - club
+  - rank
+  - date_apply
+  - order_no
+  - order_link
+  - rank_state
+  - date_expire
+  - prog_type
+  - sport_type
+  - ias_number
+  - birth_year
+
+- generator_name: razrjad_docs
+  title: Разрядные документы
+  target_url: https://fst-otm.net/index/razrjad_docs/0-25
+  output_file: static_json_data_cat.js
+  spreadsheetId: 1_gSSOhOzai4jAiOrA26NxqwfEe3FqQ6-aYAf9tB7XmE
+  range: Сведения!A2:J
+  fields:
+  - id
+  - name
+  - date_apply
+  - prog_type
+  - rank
+  - review_state
+  - date_trans_doc
+  - order_no
+  - req_app_date
+  - club
+
+- generator_name: sportivnye_sudi
+  title: Спортивные судьи
+  target_url: https://fst-otm.net/index/sportivnye_sudi_fst_otm/0-27
+  output_file: static_json_data_ref.js
+  spreadsheetId: 1CnEQgYXVq-dXrgcSGr-BmnaQ7LsKDSK4gNXbjF7WRSg
+  range: "(судьи Москвы)!A2:Q"
+  fields:
+  - id
+  - name
+  - rank
+  - region
+  - rank_state
+  - date_apply
+  - date_expire
+  - order_no
+  - order_issuer
+  - dist_type
+  - route_type
+  - qual_date
+  - statement_link
+  - req_app_date
+  - primary_link
+  - order_link
+  - confirm_link
+
+- generator_name: trips
+  title: Спортивные походы
+  target_url: https://fst-otm.net/index/test/0-21
+  output_file: static_json_data_trips.js
+  spreadsheetId: 1RQsv5J4PolYGakte1GIYGtBt2yvPswmWqX7fdkUh-T8
+  range: Журнал_импорт!A2:O
+  fields:
+  - id
+  - book_id
+  - name
+  - club
+  - part_cnt
+  - sport_type
+  - difficulty
+  - region
+  - sub_region
+  - reg_date
+  - start_date
+  - finish_date
+  - full_trip_date
+  - mkk_leader
+  - mkk_list

@@ -1,18 +1,19 @@
 import os
 import yaml
 
-CONF_FILE = os.path.join("config", "config.yaml")
-
+MAIN_CONFIG = os.path.join("config", "config.yaml")
+TABLES_CONFIG = os.path.join("config", "tables.yaml")
 
 class Config:
-    def __init__(self, env="development"):
-        self.conf_file = CONF_FILE
+    def __init__(self, config_file, env=None):
+        self.config_file = config_file
         self.config = self.load_config(env)
 
     def load_config(self, env):
-        with open(self.conf_file, "r") as file:
+        with open(self.config_file, "r") as file:
             config_data = yaml.safe_load(file)
-            return config_data.get(env, {})
+            return config_data.get(env, {}) if env else config_data
 
 
-config = Config(os.getenv("APP_ENV", "development")).config
+config = Config(config_file=MAIN_CONFIG, env=os.getenv("APP_ENV", "development")).config
+tables = Config(config_file=TABLES_CONFIG).config

@@ -58,25 +58,20 @@ class TableConverter:
         for rowData in self.rawData["values"]:
             tmpRow: dict[str, str] = dict()
             # Iterate over columns
-            for field in fields:
-                col_id = field["col"]
-                col_name = field["name"]
+            col_id = 0
+            for col_name in fields:
                 tmpRow[col_name] = rowData[col_id] if col_id < len(rowData) else ""
+                col_id += 1
             # Save row
             self.combinedData.append(tmpRow)
         # Get date of last update and generation
-        self.docName = (
+        docInfo = (
             self.service_drive.files()
             .get(fileId=self.spreadsheetId, fields="name, modifiedTime")
             .execute()
-            .get("name")
         )
-        modifiedTime = (
-            self.service_drive.files()
-            .get(fileId=self.spreadsheetId, fields="name, modifiedTime")
-            .execute()
-            .get("modifiedTime")
-        )
+        self.docName = docInfo.get("name")
+        modifiedTime = docInfo.get("modifiedTime")
         modifiedTimeParsed = parser.parse(modifiedTime)
         self.lastUpdateDate = modifiedTimeParsed.strftime("%d.%m.%Y %H:%M:%S")
         self.generationDate = datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")

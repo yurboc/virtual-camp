@@ -4,13 +4,12 @@ import pika
 import logging
 import logging.handlers
 from modules import table_converter, table_uploader
-from utils.config import config
+from utils.config import tables
 
 # Settings
 LOG_FILE = "log/converter.log"
 LOG_BACKUP_COUNT = 14
 OUT_DIR = "output"
-CONFIG_FILE = "config.json"
 INCOMING_QUEUE = "tasks_queue"
 OUTGOING_QUEUE = "results_queue"
 
@@ -29,12 +28,6 @@ logging.getLogger("googleapiclient").setLevel(logging.WARNING)
 logging.getLogger("oauth2client").setLevel(logging.WARNING)
 logging.getLogger("pika").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
-
-
-# Load config from JSON
-def load_config(config_file):
-    with open(config_file, "r") as f:
-        return json.load(f)
 
 
 # Get output file path
@@ -96,8 +89,7 @@ def on_new_task_message(ch, method, properties, body):
     uploader = table_uploader.TableUploader()
     converter.auth()
     uploader.start()
-    config = load_config(CONFIG_FILE)
-    for table_params in config:
+    for table_params in tables:
         # Convert and upload one table
         if msg_job not in [table_params.get("generator_name"), "all"]:
             logger.info(f"Skipping table {table_params['generator_name']}")
