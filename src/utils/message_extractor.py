@@ -3,18 +3,18 @@ import pika
 import logging
 import logging.handlers
 from pika.adapters.asyncio_connection import AsyncioConnection
-from modules.async_message_sender import AsyncMessageSender
+from utils.message_sender import MessageSender
 
 logger = logging.getLogger(__name__)
 
 
-class AsyncQueueClient:
+class MessageExtractor:
     def __init__(self, url, queue_name, bot_token, admin_id, session_maker):
         self.url = url
         self.queue_name = queue_name
         self.connection = None
         self.channel = None
-        self.sender = AsyncMessageSender(bot_token, admin_id, session_maker)
+        self.sender = MessageSender(bot_token, admin_id, session_maker)
 
     def connect(self):
         return AsyncioConnection(

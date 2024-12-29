@@ -1,37 +1,43 @@
 development:
   LOG:
-    NOTIFIER:
-      FILE: "log/notifier.log"
-      LEVEL: INFO
     BOT:
-      FILE: "log/bot.log"
+      FILE: log/bot.log
       LEVEL: INFO
+    CONVERTER:
+      FILE: log/converter.log
+      LEVEL: INFO
+    NOTIFIER:
+      FILE: log/notifier.log
+      LEVEL: INFO
+
+  OUTPUT:
+    DIR: output
 
     CRED_GOOGLE:
-    type: "service_account"
-    project_id: "your_project_id"
-    private_key_id: "your_key_id_here"
+    type: service_account
+    project_id: your_project_id
+    private_key_id: your_key_id_here
     private_key: "-----BEGIN PRIVATE KEY-----\n your_key_here \n-----END PRIVATE KEY-----\n"
-    client_email: "your_service_email_here@your_project.iam.gserviceaccount.com"
-    client_id: "your_client_id_here"
-    auth_uri: "https://accounts.google.com/o/oauth2/auth"
-    token_uri: "https://oauth2.googleapis.com/token"
-    auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs"
-    client_x509_cert_url: "https://www.googleapis.com/robot/v1/metadata/x509/your_service_email_here%40your_project.iam.gserviceaccount.com"
+    client_email: your_service_email_here@your_project.iam.gserviceaccount.com
+    client_id: your_client_id_here
+    auth_uri: https://accounts.google.com/o/oauth2/auth
+    token_uri: https://oauth2.googleapis.com/token
+    auth_provider_x509_cert_url: https://www.googleapis.com/oauth2/v1/certs
+    client_x509_cert_url: https://www.googleapis.com/robot/v1/metadata/x509/your_service_email_here%40your_project.iam.gserviceaccount.com
 
   CRED_FTP:
-    server: "your_server_address_here"
-    username: "your_user_name_here"
-    password: "your_password_here"
-    target_path: "/www/your_target_path/"
+    server: your_server_address_here
+    username: your_user_name_here
+    password: your_password_here
+    target_path: /www/your_target_path/
 
   BOT:
-    TOKEN: "your_token"
-    WEB_SERVER_HOST: "127.0.0.1"
+    TOKEN: your_token
+    WEB_SERVER_HOST: 127.0.0.1
     WEB_SERVER_PORT: 8000
-    WEBHOOK_PATH: "/webhook"
-    WEBHOOK_SECRET: "your-secret"
-    BASE_WEBHOOK_URL: "https://your-domain.ru"
+    WEBHOOK_PATH: /webhook
+    WEBHOOK_SECRET: your-secret
+    BASE_WEBHOOK_URL: https://your-domain.ru
     ADMIN: your-admin-telegram-id
 
   DB:
@@ -40,3 +46,10 @@ development:
     HOST: localhost
     USER: your_username
     PASSWORD: your_password
+
+  RABBITMQ:
+    URL: amqp://localhost:5672/
+    PORT: 5672
+    QUEUES:
+      TASKS: tasks_queue
+      RESULTS: results_queue

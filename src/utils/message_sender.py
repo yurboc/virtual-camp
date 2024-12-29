@@ -7,7 +7,7 @@ from storage.db_api import Database
 logger = logging.getLogger(__name__)
 
 
-class AsyncMessageSender:
+class MessageSender:
     def __init__(self, token, admin_id, session_maker):
         self.admin_id = admin_id
         self.AsyncSessionLocal = session_maker

@@ -1,7 +1,5 @@
 import asyncio
 import os
-import logging
-import logging.handlers
 import aiohttp
 from aiohttp import web
 from aiogram import Bot, Dispatcher
@@ -16,43 +14,20 @@ from middleware.inner import StoreAllMessages
 from handlers import other_handlers, user_handlers
 from storage import db_schema
 from utils.config import config
-
-
-# Logging settings
-LOG_FILE = config["LOG"]["BOT"]["FILE"]
-LOG_LEVEL = config["LOG"]["BOT"]["LEVEL"]
-LOG_FORMAT = (
-    "%(filename)s:%(lineno)d #%(levelname)-8s [%(asctime)s] - %(name)s - %(message)s"
-)
-LOG_BACKUP_COUNT = 14
-
-# Bot and Webserver settings
-TOKEN = config["BOT"]["TOKEN"]
-WEB_SERVER_HOST = config["BOT"]["WEB_SERVER_HOST"]
-WEB_SERVER_PORT = config["BOT"]["WEB_SERVER_PORT"]
-WEBHOOK_PATH = config["BOT"]["WEBHOOK_PATH"]
-WEBHOOK_SECRET = config["BOT"]["WEBHOOK_SECRET"]
-BASE_WEBHOOK_URL = config["BOT"]["BASE_WEBHOOK_URL"]
+from utils.log import setup_logger
 
 # Setup logging
-logging.basicConfig(
-    level=LOG_LEVEL,
-    format=LOG_FORMAT,
-    handlers=[
-        logging.StreamHandler(),  # write logs to console
-        logging.handlers.TimedRotatingFileHandler(  # write logs to file
-            LOG_FILE, when="midnight", backupCount=LOG_BACKUP_COUNT
-        ),
-    ],
+logger = setup_logger(
+    log_file=config["LOG"]["BOT"]["FILE"],
+    log_level=config["LOG"]["BOT"]["LEVEL"],
 )
-logging.getLogger("pika").setLevel(logging.WARNING)
-logger = logging.getLogger(__name__)
 
 
 # Startup handler
 async def on_startup(bot: Bot) -> None:
     await bot.set_webhook(
-        f"{BASE_WEBHOOK_URL}{WEBHOOK_PATH}", secret_token=WEBHOOK_SECRET
+        f'{config["BOT"]["BASE_WEBHOOK_URL"]}{config["BOT"]["WEBHOOK_PATH"]}',
+        secret_token=config["BOT"]["WEBHOOK_SECRET"],
     )
 
 
@@ -79,7 +54,10 @@ async def async_main() -> None:
     redis = Redis(host="localhost")
     storage = RedisStorage(redis=redis)
     async_session = async_sessionmaker(async_engine, expire_on_commit=False)
-    bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+    bot = Bot(
+        token=config["BOT"]["TOKEN"],
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+    )
     dp = Dispatcher(storage=storage, engine=async_engine)
 
     # Add routers
@@ -107,11 +85,11 @@ async def async_main() -> None:
     webhook_requests_handler = SimpleRequestHandler(
         dispatcher=dp,
         bot=bot,
-        secret_token=WEBHOOK_SECRET,
+        secret_token=config["BOT"]["WEBHOOK_SECRET"],
     )
 
     # Register webhook handler on application
-    webhook_requests_handler.register(app, path=WEBHOOK_PATH)
+    webhook_requests_handler.register(app, path=config["BOT"]["WEBHOOK_PATH"])
 
     # Mount dispatcher startup and shutdown hooks to aiohttp application
     setup_application(app, dp, bot=bot)
@@ -120,7 +98,11 @@ async def async_main() -> None:
     # web.run_app(app, host=WEB_SERVER_HOST, port=WEB_SERVER_PORT)
     runner = aiohttp.web.AppRunner(app)
     await runner.setup()
-    site = aiohttp.web.TCPSite(runner, host=WEB_SERVER_HOST, port=WEB_SERVER_PORT)
+    site = aiohttp.web.TCPSite(
+        runner,
+        host=config["BOT"]["WEB_SERVER_HOST"],
+        port=config["BOT"]["WEB_SERVER_PORT"],
+    )
     await site.start()
 
     # wait forever

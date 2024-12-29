@@ -1,38 +1,22 @@
 import json
 import os
 import pika
-import logging
-import logging.handlers
-from modules import table_converter, table_uploader
+from utils import table_converter
+from utils import table_uploader
+from utils.config import config
 from utils.config import tables
-
-# Settings
-LOG_FILE = "log/converter.log"
-LOG_BACKUP_COUNT = 14
-OUT_DIR = "output"
-INCOMING_QUEUE = "tasks_queue"
-OUTGOING_QUEUE = "results_queue"
+from utils.log import setup_logger
 
 # Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(filename)s:%(lineno)d #%(levelname)-8s [%(asctime)s] - %(name)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(),  # write logs to console
-        logging.handlers.TimedRotatingFileHandler(  # write logs to file
-            LOG_FILE, when="midnight", backupCount=LOG_BACKUP_COUNT
-        ),
-    ],
+logger = setup_logger(
+    log_file=config["LOG"]["NOTIFIER"]["FILE"],
+    log_level=config["LOG"]["NOTIFIER"]["LEVEL"],
 )
-logging.getLogger("googleapiclient").setLevel(logging.WARNING)
-logging.getLogger("oauth2client").setLevel(logging.WARNING)
-logging.getLogger("pika").setLevel(logging.WARNING)
-logger = logging.getLogger(__name__)
 
 
 # Get output file path
 def get_output_file_path(file_name):
-    return os.path.join(OUT_DIR, file_name)
+    return os.path.join(config["OUTPUT"]["DIR"], file_name)
 
 
 # Convert one table from Google Spreadsheet to JavaScript (JSON)
@@ -50,7 +34,7 @@ def convert_table(converter, table_params):
 # Upload generated JavaScript file to FTP
 def upload_table(uploader, table_params):
     logger.info(f"Uploading file: {table_params['output_file']}")
-    uploader.upload(table_params, local_dir=OUT_DIR)
+    uploader.upload(table_params, local_dir=config["OUTPUT"]["DIR"])
     logger.info(f"Uploaded file: {table_params['output_file']}")
 
 
@@ -60,10 +44,10 @@ def publish_result(msg):
     message_json = json.dumps(msg)
     connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
     channel = connection.channel()
-    channel.queue_declare(queue=OUTGOING_QUEUE)
+    channel.queue_declare(queue=config["RABBITMQ"]["QUEUES"]["RESULTS"])
     channel.basic_publish(
         exchange="",
-        routing_key=OUTGOING_QUEUE,
+        routing_key=config["RABBITMQ"]["QUEUES"]["RESULTS"],
         body=message_json,
     )
     connection.close()
@@ -113,9 +97,12 @@ def main():
     logger.info(f"Starting table converter with PID={os.getpid()}...")
     connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
     channel = connection.channel()
-    channel.queue_declare(queue=INCOMING_QUEUE)
+    channel.queue_declare(queue=config["RABBITMQ"]["QUEUES"]["TASKS"])
     channel.basic_qos(prefetch_count=1)
-    channel.basic_consume(queue=INCOMING_QUEUE, on_message_callback=on_new_task_message)
+    channel.basic_consume(
+        queue=config["RABBITMQ"]["QUEUES"]["TASKS"],
+        on_message_callback=on_new_task_message,
+    )
     logger.info("Worker started, waiting for messages...")
     try:
         channel.start_consuming()

@@ -1,10 +1,9 @@
 import datetime
 import json
-import httplib2
-import apiclient.discovery
 import logging
-from google.oauth2.service_account import Credentials
+import apiclient.discovery
 from dateutil import parser
+from google.oauth2.service_account import Credentials
 from utils.config import config
 
 logger = logging.getLogger(__name__)

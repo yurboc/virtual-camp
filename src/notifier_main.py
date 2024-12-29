@@ -1,38 +1,17 @@
 import asyncio
 import os
-import logging
-import logging.handlers
 from sqlalchemy import URL
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from utils.config import config
 from storage.db_schema import Base
-from modules.async_queue_client import AsyncQueueClient
-
-# Settings
-TOKEN = config["BOT"]["TOKEN"]
-ADMIN_ID = config["BOT"]["ADMIN"]
-LOG_FILE = config["LOG"]["NOTIFIER"]["FILE"]
-LOG_LEVEL = config["LOG"]["NOTIFIER"]["LEVEL"]
-LOG_FORMAT = (
-    "%(filename)s:%(lineno)d #%(levelname)-8s [%(asctime)s] - %(name)s - %(message)s"
-)
-LOG_BACKUP_COUNT = 14
-RABBITMQ_HOST = "amqp://localhost:5672/"
-INCOMING_QUEUE = "results_queue"
+from utils.message_extractor import MessageExtractor
+from utils.log import setup_logger
 
 # Setup logging
-logging.basicConfig(
-    level=LOG_LEVEL,
-    format=LOG_FORMAT,
-    handlers=[
-        logging.StreamHandler(),  # write logs to console
-        logging.handlers.TimedRotatingFileHandler(  # write logs to file
-            LOG_FILE, when="midnight", backupCount=LOG_BACKUP_COUNT
-        ),
-    ],
+logger = setup_logger(
+    log_file=config["LOG"]["NOTIFIER"]["FILE"],
+    log_level=config["LOG"]["NOTIFIER"]["LEVEL"],
 )
-logging.getLogger("pika").setLevel(logging.WARNING)
-logger = logging.getLogger(__name__)
 
 # Setup DB
 url: URL = URL.create(
@@ -56,11 +35,11 @@ async def main():
 
     # Setup RabbitMQ consumer
     logger.info("Starting RabbitMQ consumer...")
-    client = AsyncQueueClient(
-        url=RABBITMQ_HOST,
-        queue_name=INCOMING_QUEUE,
-        bot_token=TOKEN,
-        admin_id=ADMIN_ID,
+    client = MessageExtractor(
+        url=config["RABBITMQ"]["URL"],
+        queue_name=config["RABBITMQ"]["QUEUES"]["RESULTS"],
+        bot_token=config["BOT"]["TOKEN"],
+        admin_id=config["BOT"]["ADMIN"],
         session_maker=AsyncSessionLocal,
     )
     logger.info("Worker started, waiting for messages...")
