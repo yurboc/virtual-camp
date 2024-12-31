@@ -2,86 +2,63 @@ import logging
 import json
 import pika
 import uuid
+import keyboards.common as kb
 from aiogram import F, Router
 from aiogram.types import Message
 from aiogram.filters import Command, CommandStart, StateFilter
-from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
-from aiogram.utils.markdown import hbold
 from storage.db_api import Database
+from utils.config import config
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)
 
-# Queue settings
-OUTGOING_QUEUE = "tasks_queue"
-
 
 # Publish message
-def publish_message(msg):
+def queue_publish_message(msg):
     logger.info("Publishing message...")
     message_json = json.dumps(msg)
     connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
     channel = connection.channel()
-    channel.queue_declare(queue=OUTGOING_QUEUE)
+    channel.queue_declare(queue=config["RABBITMQ"]["QUEUES"]["TASKS"])
     channel.basic_publish(
         exchange="",
-        routing_key=OUTGOING_QUEUE,
+        routing_key=config["RABBITMQ"]["QUEUES"]["TASKS"],
         body=message_json,
     )
     connection.close()
     logger.info("Done publishing message!")
 
 
-@router.message(CommandStart())
+# Command /start on default state
+@router.message(StateFilter(default_state), CommandStart())
 async def command_start_handler(message: Message) -> None:
-    """
-    This handler receives messages with `/start` command
-    """
     await message.answer(
-        f"Привет, {hbold(message.from_user.full_name)}!\n"
-        "Введите /generate для генерации всех таблиц.\n"
-        "Введите /help для справки."
+        text=f"Вас приветствует бот Virtual Camp!\n" "Вы в главном меню.",
+        reply_markup=kb.get_main_kb(),
     )
 
 
-@router.message(Command(commands=["help"]))
+# Command /help on default state
+@router.message(StateFilter(default_state), Command(commands=["help"]))
 async def process_help_command(message: Message) -> None:
-    """
-    This handler receives messages with `/help` command
-    """
     await message.answer(
-        f"Справка:\nИспользуйте команду /generate чтобы начать генерацию таблиц."
+        f"Справка:\n"
+        "Команда /diag - войти в диагностический режим.\n"
+        "Команда /generate - начать генерацию таблиц.\n"
     )
 
 
+# Command /generate on default state
 @router.message(Command(commands=["generate"]))
 async def process_generate_command(
     message: Message, db: Database, user_id: int
 ) -> None:
-    """
-    This handler receives messages with `/generate` command
-    """
     task_uuid = str(uuid.uuid4())
     user = await db.user_by_tg_id(user_id)
     task = await db.task_add(task_uuid=task_uuid, user=user)
     msg = {"uuid": task_uuid, "task_id": task.id, "job": "all"}
-    publish_message(msg)
+    queue_publish_message(msg)
     await message.answer(
         f"Генерация запущена, ждите...\nUUID: {task_uuid}\nID задания: {task.id}"
     )
-
-
-@router.message()
-async def echo_handler(message: Message) -> None:
-    """
-    Handler will forward receive a message back to the sender
-
-    By default, message handler will handle all message types (like text, photo, sticker etc.)
-    """
-    try:
-        # Send a copy of the received message
-        await message.send_copy(chat_id=message.chat.id)
-    except TypeError:
-        # But not all the types is supported to be copied so need to handle it
-        await message.answer("Nice try!")

@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from middleware.outer import DatabaseMiddleware, StoreAllUpdates, CheckUserType
 from middleware.inner import StoreAllMessages
 from handlers import other_handlers, user_handlers
+from handlers import fsm_mode_diag
 from storage import db_schema
 from utils.config import config
 from utils.log import setup_logger
@@ -45,7 +46,7 @@ async def async_main() -> None:
     )
     async_engine: AsyncEngine = create_async_engine(db_url, echo=False)
 
-    # Create DB structure
+    # Create DB structures
     async with async_engine.begin() as conn:
         # DROP TABLES: await conn.run_sync(db_schema.Base.metadata.drop_all)
         await conn.run_sync(db_schema.Base.metadata.create_all)
@@ -61,6 +62,7 @@ async def async_main() -> None:
     dp = Dispatcher(storage=storage, engine=async_engine)
 
     # Add routers
+    dp.include_router(fsm_mode_diag.router)
     dp.include_router(user_handlers.router)
     dp.include_router(other_handlers.router)
 
