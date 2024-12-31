@@ -21,8 +21,9 @@ from utils.log import setup_logger
 
 # Setup logging
 logger = setup_logger(
-    log_file=config["LOG"]["BOT"]["FILE"],
-    log_level=config["LOG"]["BOT"]["LEVEL"],
+    name=__name__,
+    file=config["LOG"]["BOT"]["FILE"],
+    level=config["LOG"]["BOT"]["LEVEL"],
 )
 
 

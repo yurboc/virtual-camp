@@ -9,8 +9,9 @@ from utils.log import setup_logger
 
 # Setup logging
 logger = setup_logger(
-    log_file=config["LOG"]["NOTIFIER"]["FILE"],
-    log_level=config["LOG"]["NOTIFIER"]["LEVEL"],
+    name=__name__,
+    file=config["LOG"]["NOTIFIER"]["FILE"],
+    level=config["LOG"]["NOTIFIER"]["LEVEL"],
 )
 
 # Setup DB
