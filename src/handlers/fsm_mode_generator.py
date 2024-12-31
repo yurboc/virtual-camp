@@ -10,7 +10,7 @@ from aiogram.filters import Command, StateFilter
 from aiogram.filters import or_f
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
-from aiogram.utils.formatting import Text, Pre, as_list, as_marked_list, as_key_value
+from aiogram.utils.formatting import Text, as_list, as_key_value
 from handlers.fsm_define import MainGroup
 from storage.db_api import Database
 from utils.config import config, tables

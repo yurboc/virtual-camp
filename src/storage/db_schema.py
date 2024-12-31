@@ -65,7 +65,7 @@ class TgUser(Base):
         return (
             f"<TgUser(id={self.id}, tg_id={self.tg_id},"
             f" tg_first_name={self.tg_first_name}, tg_last_name={self.tg_last_name},"
-            f" tg_username={self.tg_username}, name={self.name},"
+            f" tg_username={self.tg_username}, tg_phone={self.tg_phone}, name={self.name},"
             f" status={self.status}, create_ts={self.create_ts}, update_ts={self.update_ts})>"
         )
 
