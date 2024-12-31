@@ -1,8 +1,9 @@
 import logging
 import keyboards.common as kb
-from aiogram import Router
+from aiogram import F, Router
 from aiogram.types import Message
 from aiogram.filters import Command, StateFilter
+from aiogram.filters import or_f
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from aiogram.utils.formatting import Text, Pre, as_list, as_marked_list, as_key_value
@@ -14,7 +15,10 @@ router = Router(name=__name__)
 
 
 # Entering diagnostic mode
-@router.message(StateFilter(default_state), Command(commands=["diag"]))
+@router.message(
+    StateFilter(default_state),
+    or_f(Command(commands=["diag"]), F.text == "Диагностика"),
+)
 async def process_diag_command(message: Message, state: FSMContext) -> None:
     logger.info(f"FSM: diag: entering diag mode")
     await state.set_state(MainGroup.diag_mode)

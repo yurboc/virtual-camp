@@ -11,8 +11,10 @@ from sqlalchemy import URL
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncEngine
 from middleware.outer import DatabaseMiddleware, StoreAllUpdates, CheckUserType
 from middleware.inner import StoreAllMessages
-from handlers import other_handlers, user_handlers
 from handlers import fsm_mode_diag
+from handlers import fsm_mode_generator
+from handlers import user_handlers
+from handlers import other_handlers
 from storage import db_schema
 from utils.config import config
 from utils.log import setup_logger
@@ -63,6 +65,7 @@ async def async_main() -> None:
 
     # Add routers
     dp.include_router(fsm_mode_diag.router)
+    dp.include_router(fsm_mode_generator.router)
     dp.include_router(user_handlers.router)
     dp.include_router(other_handlers.router)
 

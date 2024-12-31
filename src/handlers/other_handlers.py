@@ -8,7 +8,7 @@ router = Router(name=__name__)
 help_str = "\n\nОтправьте /help для справки."
 
 
-# Default cancel
+# Default cancel (no active processes)
 @router.message(Command(commands=["cancel"]))
 async def send_cancel_answer(message: Message):
     await message.answer(text="Нет активных процессов." + help_str)
