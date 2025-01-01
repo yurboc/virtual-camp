@@ -39,17 +39,17 @@ def get_generator_kb() -> ReplyKeyboardMarkup:
     return kb_markup
 
 
-# COUNTER MENU
-def get_counter_kb() -> ReplyKeyboardMarkup:
+# ABONEMENT MENU
+def get_abonement_kb() -> ReplyKeyboardMarkup:
     buttons: list[KeyboardButton] = []
     buttons.append(KeyboardButton(text="Мои абонементы"))
-    buttons.append(KeyboardButton(text="Создать новый"))
-    buttons.append(KeyboardButton(text="Присоединиться"))
+    buttons.append(KeyboardButton(text="Создать абонемент"))
+    buttons.append(KeyboardButton(text="Подключить абонемент"))
     buttons.append(KeyboardButton(text="Выход"))
     kb_builder = ReplyKeyboardBuilder()
     kb_builder.row(*buttons, width=2)
     kb_markup: ReplyKeyboardMarkup = kb_builder.as_markup(
-        one_time_keyboard=True, resize_keyboard=True
+        one_time_keyboard=False, resize_keyboard=True
     )
     return kb_markup
 

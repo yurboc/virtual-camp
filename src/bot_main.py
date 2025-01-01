@@ -13,7 +13,7 @@ from middleware.outer import DatabaseMiddleware, StoreAllUpdates, CheckUserType
 from middleware.inner import StoreAllMessages
 from handlers import fsm_mode_diag
 from handlers import fsm_mode_generator
-from handlers import fsm_mode_counter
+from handlers import fsm_mode_abonement
 from handlers import user_handlers
 from handlers import other_handlers
 from storage import db_schema
@@ -68,7 +68,7 @@ async def async_main() -> None:
     # Add routers
     dp.include_router(fsm_mode_diag.router)
     dp.include_router(fsm_mode_generator.router)
-    dp.include_router(fsm_mode_counter.router)
+    dp.include_router(fsm_mode_abonement.router)
     dp.include_router(user_handlers.router)
     dp.include_router(other_handlers.router)
 

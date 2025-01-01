@@ -60,6 +60,15 @@ class TgUser(Base):
     notifications: Mapped[List["TgNotification"]] = relationship(
         "TgNotification", back_populates="user"
     )
+    abonements: Mapped[List["TgAbonement"]] = relationship(
+        "TgAbonement", back_populates="owner"
+    )
+    abonement_uses: Mapped[List["TgAbonementUser"]] = relationship(
+        "TgAbonementUser", back_populates="user"
+    )
+    abonement_passes: Mapped[List["TgAbonementPass"]] = relationship(
+        "TgAbonementPass", back_populates="user"
+    )
 
     def __repr__(self) -> str:
         return (
@@ -94,3 +103,50 @@ class TgNotification(Base):
     message: Mapped[str]
     user: Mapped[TgUser] = relationship("TgUser", back_populates="notifications")
     user_id: Mapped[int] = mapped_column(ForeignKey("tg_users.id"))
+
+
+class TgAbonement(Base):
+    __tablename__ = "tg_abonements"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, unique=True)
+    name: Mapped[str]
+    token: Mapped[str]
+    total_passes: Mapped[int]
+    create_ts: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP,
+        nullable=False,
+        server_default=func.CURRENT_TIMESTAMP(),
+    )
+    owner: Mapped[TgUser] = relationship("TgUser", back_populates="abonements")
+    owner_id: Mapped[int] = mapped_column(ForeignKey("tg_users.id"))
+    users: Mapped[List["TgAbonementUser"]] = relationship(
+        "TgAbonementUser", back_populates="abonement"
+    )
+    passes: Mapped[List["TgAbonementPass"]] = relationship(
+        "TgAbonementPass", back_populates="abonement"
+    )
+
+
+class TgAbonementUser(Base):
+    __tablename__ = "tg_abonement_users"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, unique=True)
+    permission: Mapped[str]
+    user: Mapped[TgUser] = relationship("TgUser", back_populates="abonement_uses")
+    user_id: Mapped[int] = mapped_column(ForeignKey("tg_users.id"))
+    abonement: Mapped[TgAbonement] = relationship("TgAbonement", back_populates="users")
+    abonement_id: Mapped[int] = mapped_column(ForeignKey("tg_abonements.id"))
+
+
+class TgAbonementPass(Base):
+    __tablename__ = "tg_abonement_passes"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, unique=True)
+    ts: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP,
+        nullable=False,
+        server_default=func.CURRENT_TIMESTAMP(),
+    )
+    user: Mapped[TgUser] = relationship("TgUser", back_populates="abonement_passes")
+    user_id: Mapped[int] = mapped_column(ForeignKey("tg_users.id"))
+    abonement: Mapped[TgAbonement] = relationship(
+        "TgAbonement", back_populates="passes"
+    )
+    abonement_id: Mapped[int] = mapped_column(ForeignKey("tg_abonements.id"))

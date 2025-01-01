@@ -4,4 +4,4 @@ from aiogram.fsm.state import State, StatesGroup
 class MainGroup(StatesGroup):
     diag_mode = State()
     generator_mode = State()
-    counter_mode = State()
+    abonement_mode = State()

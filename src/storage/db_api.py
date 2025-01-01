@@ -1,7 +1,9 @@
 import logging
-from typing import Optional
+import uuid
+from typing import Optional, Sequence
 from aiogram.types import TelegramObject, Message
 from storage.db_schema import TgUpdate, TgMessage, TgUser, TgNotification, TgTask
+from storage.db_schema import TgAbonement, TgAbonementUser, TgAbonementPass
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -67,40 +69,6 @@ class Database:
         user = users.scalar()
         return user
 
-    # Fill registration data
-    async def user_reg(self, tg_id, phone, first_name, last_name, username) -> None:
-        existing_user = await self.user_by_tg_id(tg_id)
-        if not existing_user:
-            logger.error(f"Call reg_user() for unknown user {tg_id}")
-            return
-        existing_user.tg_first_name = first_name
-        existing_user.tg_last_name = last_name
-        existing_user.tg_phone = phone
-        existing_user.name = username
-        existing_user.status = "registered"
-        await self.user_update(existing_user)
-
-    # Update existing user
-    async def user_update(self, user: TgUser) -> None:
-        existing_users = await self.session.execute(
-            select(TgUser).where(TgUser.tg_id == user.tg_id)
-        )
-        existing_user = existing_users.scalar()
-        if not existing_user:
-            logger.error(f"Failed user_update() on user {user.tg_id}")
-            return
-        db_user = await self.session.get(
-            TgUser, {"id": existing_user.id, "tg_id": existing_user.tg_id}
-        )
-        if db_user:
-            logger.info(f"Update user {user.tg_id}")
-            db_user.tg_first_name = user.tg_first_name
-            db_user.tg_last_name = user.tg_last_name
-            db_user.tg_phone = user.tg_phone
-            db_user.name = user.name
-            db_user.status = user.status
-            await self.session.commit()
-
     # Get user status
     async def user_status(self, tg_user: TelegramObject) -> str:
         user = await self.user_by_tg_id(tg_user.id)
@@ -138,3 +106,33 @@ class Database:
         self.session.add(sent_message)
         await self.session.commit()
         logger.info("Notification was stored")
+
+    # Abonements list for owner
+    async def abonements_list_by_owner(self, user: TgUser) -> Sequence[TgAbonement]:
+        stmt = select(TgAbonement).where(TgAbonement.owner_id == user.id)
+        result = await self.session.execute(stmt)
+        abonements = result.scalars().all()
+        return abonements
+
+    # Abonements list for user
+    async def abonements_list_by_user(self, user: TgUser) -> Sequence[TgAbonement]:
+        stmt = (
+            select(TgAbonement)
+            .join(TgAbonementUser)
+            .where(TgAbonementUser.user_id == user.id)
+        )
+        result = await self.session.execute(stmt)
+        abonements = result.scalars().all()
+        return abonements
+
+    # Abonement create
+    async def abonement_create(
+        self, name: str, owner: TgUser, total_passes: int
+    ) -> TgAbonement:
+        abonement_uuid = str(uuid.uuid4())
+        abonement = TgAbonement(
+            name=name, token=abonement_uuid, total_passes=total_passes, owner=owner
+        )
+        self.session.add(abonement)
+        await self.session.commit()
+        return abonement
