@@ -2,7 +2,7 @@ import logging
 import keyboards.common as kb
 import re
 from aiogram import F, Router
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command, StateFilter
 from aiogram.filters import or_f
 from aiogram.fsm.context import FSMContext
@@ -16,11 +16,218 @@ from aiogram.utils.formatting import (
     as_key_value,
     as_marked_list,
 )
+from aiogram.utils.deep_linking import create_start_link
 from handlers.fsm_define import MainGroup, AbonementGroup
+from keyboards.common import AbonementCallbackFactory
 from storage.db_api import Database
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)
+
+
+#
+# HANDLE CALLBACKS
+#
+
+
+# Open Abonement
+@router.callback_query(
+    StateFilter(MainGroup.abonement_mode),
+    AbonementCallbackFactory.filter(F.action == "open"),
+)
+async def callbacks_abonement_open(
+    callback: CallbackQuery,
+    callback_data: AbonementCallbackFactory,
+    state: FSMContext,
+    db: Database,
+):
+    await callback.answer()
+    await state.set_state(AbonementGroup.abonement_open)
+    abonement = await db.abonement_by_id(callback_data.id)
+    if not abonement or abonement.token != callback_data.token:
+        if callback.message and type(callback.message) == Message:
+            await callback.message.answer(
+                f"Неверный ключ абонемента. Введите /cancel для выхода.",
+            )
+        return
+    if callback.message and type(callback.message) == Message:
+        await callback.message.edit_reply_markup(None)
+        await callback.message.answer(
+            **as_list(
+                "Выбран абонемент",
+                Bold(abonement.name),
+                *(
+                    [Italic(abonement.description), ""]
+                    if abonement.description
+                    else [""]
+                ),
+                (
+                    f"На {abonement.total_passes} посещений"
+                    if abonement.total_passes != 0
+                    else "Без ограничения посещений"
+                ),
+            ).as_kwargs(),
+            reply_markup=kb.get_abonement_control_kb(abonement),
+        )
+
+
+# Pass Abonement
+@router.callback_query(
+    StateFilter(AbonementGroup.abonement_open),
+    AbonementCallbackFactory.filter(F.action == "pass"),
+)
+async def callbacks_abonement_pass(
+    callback: CallbackQuery,
+    callback_data: AbonementCallbackFactory,
+    state: FSMContext,
+    db: Database,
+):
+    await callback.answer()
+    abonement = await db.abonement_by_id(callback_data.id)
+    user = await db.user_by_tg_id(callback.from_user.id)
+    if not abonement or abonement.token != callback_data.token or not user:
+        if callback.message and type(callback.message) == Message:
+            await callback.message.answer(
+                "Неверный ключ абонемента или пользователь. Введите /cancel для выхода.",
+            )
+        return
+    if callback.message and type(callback.message) == Message and user:
+        await callback.message.edit_reply_markup(None)
+        pass_list = await db.abonement_pass_list(abonement.id)
+        my_pass_list = await db.abonement_pass_list(abonement.id, user_id=user.id)
+        await state.set_state(AbonementGroup.abonement_pass)
+        await callback.message.answer(
+            **as_list(
+                as_key_value("Совершено проходов", len(pass_list)),
+                as_key_value("Моих проходов", len(my_pass_list)),
+                *(
+                    [
+                        as_key_value(
+                            "Осталось проходов",
+                            abonement.total_passes - len(my_pass_list),
+                        ),
+                        "",
+                    ]
+                    if abonement.total_passes != 0
+                    else [""]
+                ),
+                "Записать сейчас проход?",
+            ).as_kwargs(),
+            reply_markup=kb.get_abonement_pass_kb(abonement),
+        )
+
+
+# Accept Abonement pass
+@router.callback_query(
+    StateFilter(AbonementGroup.abonement_pass),
+    AbonementCallbackFactory.filter(F.action == "pass_accept"),
+)
+async def callbacks_abonement_accept_pass(
+    callback: CallbackQuery,
+    callback_data: AbonementCallbackFactory,
+    state: FSMContext,
+    db: Database,
+):
+    await callback.answer()
+    abonement = await db.abonement_by_id(callback_data.id)
+    user = await db.user_by_tg_id(callback.from_user.id)
+    if not abonement or abonement.token != callback_data.token or not user:
+        if callback.message and type(callback.message) == Message:
+            await callback.message.answer(
+                "Неверный ключ абонемента или пользователь. Введите /cancel для выхода.",
+            )
+        return
+    abonement_pass = await db.abonement_pass_add(abonement.id, user.id)
+    if callback.message and type(callback.message) == Message and abonement_pass:
+        await callback.message.edit_reply_markup(None)
+        await state.set_state(MainGroup.abonement_mode)
+        await callback.message.answer(
+            **as_list(
+                "✅ Проход записан",
+                Bold(abonement_pass.ts.strftime("%d.%m.%Y %H:%M:%S")),
+                "Выход в меню управления абонементами",
+            ).as_kwargs(),
+            reply_markup=kb.get_abonement_kb(),
+        )
+
+
+# Reject Abonement pass
+@router.callback_query(
+    StateFilter(AbonementGroup.abonement_pass),
+    AbonementCallbackFactory.filter(F.action == "pass_reject"),
+)
+async def callbacks_abonement_reject_pass(
+    callback: CallbackQuery,
+    callback_data: AbonementCallbackFactory,
+    state: FSMContext,
+    db: Database,
+):
+    await callback.answer()
+    abonement = await db.abonement_by_id(callback_data.id)
+    if not abonement or abonement.token != callback_data.token:
+        if callback.message and type(callback.message) == Message:
+            await callback.message.answer(
+                f"Неверный ключ абонемента. Введите /cancel для выхода.",
+            )
+        return
+    if callback.message and type(callback.message) == Message:
+        await callback.message.edit_reply_markup(None)
+        await state.set_state(MainGroup.abonement_mode)
+        await callback.message.answer(
+            **as_list(
+                "❌ Проход не записан", "Выход в меню управления абонементами"
+            ).as_kwargs(),
+            reply_markup=kb.get_abonement_kb(),
+        )
+
+
+# Share Abonement
+@router.callback_query(
+    StateFilter(AbonementGroup.abonement_open),
+    AbonementCallbackFactory.filter(F.action == "share"),
+)
+async def callbacks_abonement_share(
+    callback: CallbackQuery,
+    callback_data: AbonementCallbackFactory,
+    state: FSMContext,
+    db: Database,
+):
+    await callback.answer()
+    abonement = await db.abonement_by_id(callback_data.id)
+    if not abonement or abonement.token != callback_data.token:
+        if callback.message and type(callback.message) == Message:
+            await callback.message.answer(
+                f"Неверный ключ абонемента. Введите /cancel для выхода.",
+            )
+        return
+    if callback.message and type(callback.message) == Message:
+        await callback.message.edit_reply_markup(None)
+        await state.set_state(MainGroup.abonement_mode)
+        await callback.message.answer(
+            **as_list(
+                "Абонемент:",
+                Bold(abonement.name),
+                *(
+                    [Italic(abonement.description), ""]
+                    if abonement.description
+                    else [""]
+                ),
+                "Поделиться:",
+                (
+                    await create_start_link(
+                        bot=callback.message.bot, payload=f"abonement_{abonement.token}"
+                    )
+                    if callback.message.bot
+                    else Bold("недоступно")
+                ),
+            ).as_kwargs(),
+            reply_markup=kb.get_abonement_kb(),
+        )
+
+
+#
+# HANDLE MESSAGES
+#
 
 
 # Entering Abonement mode
@@ -42,15 +249,29 @@ async def process_abonement_command(message: Message, state: FSMContext) -> None
     )
 
 
-# Help command for Abonement
+# Help command for Abonement mode
 @router.message(StateFilter(MainGroup.abonement_mode), Command(commands=["help"]))
-async def process_abonement_help_command(message: Message) -> None:
-    logger.info(f"FSM: abonement: help command")
+async def process_abonement_mode_help_command(message: Message) -> None:
+    logger.info(f"FSM: abonement mode: help command")
     await message.answer(
         **Text(
             as_list(
-                "Режим работы с абонементами:",
+                "Режим работы с абонементами",
                 "/cancel - завершить работу с абонементами",
+            )
+        ).as_kwargs(),
+    )
+
+
+# Help command for Abonement Control mode
+@router.message(StateFilter(AbonementGroup), Command(commands=["help"]))
+async def process_abonement_ctrl_help_command(message: Message) -> None:
+    logger.info(f"FSM: abonement control: help command")
+    await message.answer(
+        **Text(
+            as_list(
+                "Режим управления абонементом",
+                "/cancel - завершить работу с абонементом",
             )
         ).as_kwargs(),
     )
@@ -105,7 +326,10 @@ async def process_my_abonements_command(
     my_abonements_text = None
     if my_abonements_list:
         my_abonements_text = Text(
-            as_list("Мои абонементы:", as_marked_list(*my_abonements_list))
+            as_list(
+                Bold("Мои абонементы:"),
+                as_marked_list(*my_abonements_list, marker="👤 "),
+            )
         )
     # Find other abonements
     other_abonements = await db.abonements_list_by_user(user)
@@ -113,22 +337,30 @@ async def process_my_abonements_command(
     other_abonements_text = None
     if other_abonements_list:
         other_abonements_text = Text(
-            as_list("Абонементы друзей:", as_marked_list(*other_abonements_list))
+            as_list(
+                Bold("Абонементы друзей:"),
+                as_marked_list(*other_abonements_list, marker="👥 "),
+            )
         )
     # Combine abonements info
     if my_abonements_text or other_abonements_text:
-        content = Text(
-            as_list(
+        await message.answer(
+            f"Доступно абонементов: {len(my_abonements) + len(other_abonements)}",
+            reply_markup=kb.no_keyboard,
+        )
+        await message.answer(
+            **as_list(
                 *my_abonements_text if my_abonements_text else [],
                 *other_abonements_text if other_abonements_text else [],
-                "С каким абонементом работаем?",
-            )
+                Bold("С каким абонементом работаем?"),
+                "/cancel - завершить работу с абонементами",
+            ).as_kwargs(),
+            reply_markup=kb.get_abonement_list_kb(my_abonements, other_abonements),
         )
     else:
-        content = Text(
-            "Абонементы отсутствуют. Создайте новый или присоединитесь к существующему."
+        await message.answer(
+            "Абонементов нет. Создайте новый или присоединитесь к существующему."
         )
-    await message.answer(**content.as_kwargs())
 
 
 #
@@ -278,13 +510,27 @@ async def process_good_description_abonement_command(
     # Reset state to Abonenment mode
     await state.clear()
     await state.set_state(MainGroup.abonement_mode)
+    key = abonement.token
     await message.answer(
         **as_list(
-            "Абонемент создан",
+            "Абонемент создан:",
             Bold(abonement.name),
             "",
-            as_key_value("Ключ", Code(abonement.token)),
+            "Ключ",
+            Code(key),
             "",
+            "Ссылка для подключения:",
+            (
+                await create_start_link(bot=message.bot, payload=f"abonement_{key}")
+                if message.bot
+                else Bold("недоступна")
+            ),
+            "",
+            "Если хотите поделиться абонементом, перешлите это сообщение другому пользователю.",
+        ).as_kwargs()
+    )
+    await message.answer(
+        **as_list(
             "Вы в меню работы с абонементами.",
             "/cancel - выйти в главное меню",
         ).as_kwargs(),
@@ -332,7 +578,7 @@ async def process_good_key_join_abonement_command(
     message: Message, state: FSMContext, user_id: int, db: Database
 ) -> None:
     logger.info(f"FSM: abonement: GOOD key for join abonement")
-    # Check key
+    # Check token
     abonement_token = message.text.lower() if message.text else None
     if not abonement_token or not re.search(
         r"^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
@@ -349,7 +595,7 @@ async def process_good_key_join_abonement_command(
             ).as_kwargs()
         )
         return
-    # Key accepted, check abonement
+    # Token accepted. Find abonement by token
     await state.update_data(abonement_token=abonement_token)
     await state.update_data(user_id=user_id)
     abonement = await db.abonement_by_token(abonement_token)
@@ -364,7 +610,7 @@ async def process_good_key_join_abonement_command(
             ).as_kwargs()
         )
         return
-    # Key accepted, check owner
+    # Abonement found. Check user is not owner
     if abonement.owner_id == user_id:
         await message.answer(
             **as_list(
@@ -375,7 +621,7 @@ async def process_good_key_join_abonement_command(
             ).as_kwargs()
         )
         return
-    # Key accepted, check user
+    # User ok. Check user is not already in abonement
     abonement_user = await db.abonement_user(user_id=user_id, abonement_id=abonement.id)
     if abonement_user:
         await message.answer(
@@ -389,8 +635,7 @@ async def process_good_key_join_abonement_command(
             ).as_kwargs()
         )
         return
-
-    # Ask to add abonement
+    # It's first time - ok. Ask to add user to abonement
     await state.update_data(abonement_id=abonement.id)
     await state.set_state(AbonementGroup.abonement_accept)
     await message.answer(

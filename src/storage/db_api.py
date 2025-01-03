@@ -191,3 +191,29 @@ class Database:
         result = await self.session.execute(stmt)
         abonement_user = result.scalars().first()
         return abonement_user
+
+    # Abonement pass list
+    async def abonement_pass_list(
+        self, abonement_id: int, user_id: Optional[int] = None
+    ) -> Sequence[TgAbonementPass]:
+        if not user_id:
+            stmt = select(TgAbonementPass).where(
+                TgAbonementPass.abonement_id == abonement_id
+            )
+        else:
+            stmt = select(TgAbonementPass).where(
+                TgAbonementPass.abonement_id == abonement_id,
+                TgAbonementPass.user_id == user_id,
+            )
+        result = await self.session.execute(stmt)
+        abonement_passes = result.scalars().all()
+        return abonement_passes
+
+    # Abonement pass add
+    async def abonement_pass_add(
+        self, abonement_id: int, user_id: int
+    ) -> TgAbonementPass:
+        abonement_pass = TgAbonementPass(abonement_id=abonement_id, user_id=user_id)
+        self.session.add(abonement_pass)
+        await self.session.commit()
+        return abonement_pass

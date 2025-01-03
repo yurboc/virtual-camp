@@ -16,7 +16,9 @@ router = Router(name=__name__)
 async def command_start_handler(message: Message) -> None:
     logger.info(f"Got START command")
     await message.answer(
-        text=f"Вас приветствует бот Virtual Camp!\n" "Вы в главном меню.",
+        **Text(
+            as_list("Вас приветствует бот Virtual Camp!", "", "Вы в главном меню.")
+        ).as_kwargs(),
         reply_markup=kb.get_main_kb(),
     )
 
