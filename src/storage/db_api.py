@@ -1,7 +1,7 @@
 import logging
 import uuid
-from typing import Optional, Sequence
-from aiogram.types import TelegramObject, Message
+from typing import Optional, Sequence, Union
+from aiogram.types import TelegramObject, User, Message
 from storage.db_schema import TgUpdate, TgMessage, TgUser, TgNotification, TgTask
 from storage.db_schema import TgAbonement, TgAbonementUser, TgAbonementPass
 from sqlalchemy import select
@@ -39,14 +39,14 @@ class Database:
         await self.session.commit()
 
     # Add user
-    async def user_add(self, tg_user: TelegramObject) -> None:
+    async def user_add(self, tg_user: User) -> TgUser:
         users = await self.session.execute(
             select(TgUser).where(TgUser.tg_id == tg_user.id)
         )
         user = users.scalar()
         if not user:
             logger.info(f"Create user {tg_user.id}")
-            new_user = TgUser(
+            user = TgUser(
                 tg_id=tg_user.id,
                 tg_first_name=tg_user.first_name,
                 tg_last_name=tg_user.last_name,
@@ -54,8 +54,9 @@ class Database:
                 name=tg_user.full_name,
                 status="unregistered",
             )
-            self.session.add(new_user)
+            self.session.add(user)
             await self.session.commit()
+        return user
 
     # Get user by id
     async def user_by_id(self, user_id: int) -> Optional[TgUser]:
@@ -70,16 +71,20 @@ class Database:
         return user
 
     # Get user status
-    async def user_status(self, tg_user: TelegramObject) -> str:
-        user = await self.user_by_tg_id(tg_user.id)
+    async def get_or_create_user(
+        self, tg_user: Union[TelegramObject, User]
+    ) -> Optional[TgUser]:
+        user = await self.user_by_tg_id(tg_user.id) if type(tg_user) == User else None
         status = "unknown"
         if user:
             status = user.status
         else:
             status = "new_user"
-            await self.user_add(tg_user=tg_user)
+            user = (
+                await self.user_add(tg_user=tg_user) if type(tg_user) == User else None
+            )
         logger.info(f"User status is {status}")
-        return status
+        return user
 
     # Create task
     async def task_add(self, task_uuid: str, user: TgUser) -> TgTask:
@@ -94,7 +99,8 @@ class Database:
         stmt = select(TgTask).where(TgTask.id == task_id)
         result = await self.session.execute(stmt)
         task = result.scalars().first()
-        # user = task.user
+        if not task:
+            return None
         stmt = select(TgUser).where(TgUser.id == task.user_id)
         result = await self.session.execute(stmt)
         user = result.scalars().first()
@@ -127,7 +133,11 @@ class Database:
 
     # Abonement create
     async def abonement_create(
-        self, name: str, owner: TgUser, total_passes: int = 0, description: str = None
+        self,
+        name: str,
+        owner: TgUser,
+        total_passes: int = 0,
+        description: Optional[str] = None,
     ) -> TgAbonement:
         abonement_uuid = str(uuid.uuid4())
         abonement = TgAbonement(
@@ -140,3 +150,44 @@ class Database:
         self.session.add(abonement)
         await self.session.commit()
         return abonement
+
+    # Abonement by token
+    async def abonement_by_token(self, token: str) -> Optional[TgAbonement]:
+        stmt = select(TgAbonement).where(TgAbonement.token == token)
+        result = await self.session.execute(stmt)
+        abonement = result.scalars().first()
+        return abonement
+
+    # Abonement by id
+    async def abonement_by_id(self, id: int) -> Optional[TgAbonement]:
+        stmt = select(TgAbonement).where(TgAbonement.id == id)
+        result = await self.session.execute(stmt)
+        abonement = result.scalars().first()
+        return abonement
+
+    # Abonement add user
+    async def abonement_user_add(
+        self, user_id: int, abonement_id: int, abonement_token: str
+    ) -> Optional[TgAbonementUser]:
+        user = await self.user_by_id(user_id)
+        abonement = await self.abonement_by_id(abonement_id)
+        if not user or not abonement or abonement.token != abonement_token:
+            return None
+        abonement_user = TgAbonementUser(
+            abonement=abonement, user=user, permission="user"
+        )
+        self.session.add(abonement_user)
+        await self.session.commit()
+        return abonement_user
+
+    # Abonement user
+    async def abonement_user(
+        self, user_id: int, abonement_id: int
+    ) -> Optional[TgAbonementUser]:
+        stmt = select(TgAbonementUser).where(
+            TgAbonementUser.user_id == user_id,
+            TgAbonementUser.abonement_id == abonement_id,
+        )
+        result = await self.session.execute(stmt)
+        abonement_user = result.scalars().first()
+        return abonement_user

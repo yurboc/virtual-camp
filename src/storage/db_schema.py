@@ -38,7 +38,7 @@ class TgMessage(Base):
 class TgUser(Base):
     __tablename__ = "tg_users"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, unique=True)
-    tg_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, unique=True)
+    tg_id: Mapped[int] = mapped_column(BigInteger, index=True, unique=True)
     tg_first_name: Mapped[Optional[str]] = mapped_column(String(60))
     tg_last_name: Mapped[Optional[str]] = mapped_column(String(60))
     tg_username: Mapped[Optional[str]] = mapped_column(String(60))
@@ -108,8 +108,8 @@ class TgNotification(Base):
 class TgAbonement(Base):
     __tablename__ = "tg_abonements"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, unique=True)
+    token: Mapped[str] = mapped_column(String(60), index=True, unique=True)
     name: Mapped[str]
-    token: Mapped[str]
     total_passes: Mapped[int]
     description: Mapped[Optional[str]]
     create_ts: Mapped[datetime.datetime] = mapped_column(

@@ -1,5 +1,6 @@
 import logging
 import keyboards.common as kb
+import re
 from aiogram import F, Router
 from aiogram.types import Message
 from aiogram.filters import Command, StateFilter
@@ -97,7 +98,7 @@ async def process_my_abonements_command(
     message: Message, user_id: int, db: Database
 ) -> None:
     logger.info(f"FSM: abonement: list my abonements")
-    user = await db.user_by_tg_id(user_id)
+    user = await db.user_by_id(user_id)
     # Find my abonements
     my_abonements = await db.abonements_list_by_owner(user)
     my_abonements_list = [abonement.name for abonement in my_abonements]
@@ -133,7 +134,9 @@ async def process_my_abonements_command(
 #
 # Add new Abonement: BEGIN
 #
-@router.message(StateFilter(MainGroup.abonement_mode), F.text == "Создать абонемент")
+@router.message(
+    StateFilter(MainGroup.abonement_mode), F.text == "Создать новый абонемент"
+)
 async def process_add_abonement_command(message: Message, state: FSMContext) -> None:
     logger.info(f"FSM: abonement: BEGIN new abonement")
     await state.set_state(AbonementGroup.abonement_name)
@@ -191,9 +194,7 @@ async def process_good_name_abonement_command(
 
 # Add new Abonement: WRONG ABONEMENT NAME
 @router.message(StateFilter(AbonementGroup.abonement_name))
-async def process_wrong_name_abonement_command(
-    message: Message, state: FSMContext
-) -> None:
+async def process_wrong_name_abonement_command(message: Message) -> None:
     logger.info(f"FSM: abonement: WRONG NAME for abonement")
     await message.answer(
         **as_list(
@@ -240,9 +241,7 @@ async def process_good_passes_abonement_command(
 
 # Add new Abonement: WRONG ABONEMENT TOTAL PASSES
 @router.message(StateFilter(AbonementGroup.abonement_total_passes))
-async def process_wrong_passes_abonement_command(
-    message: Message, state: FSMContext
-) -> None:
+async def process_wrong_passes_abonement_command(message: Message) -> None:
     logger.info(f"FSM: abonement: WRONG TOTAL PASSES for abonement")
     await message.answer(
         **as_list(
@@ -268,7 +267,7 @@ async def process_good_description_abonement_command(
         await state.update_data(description=None)
     else:
         await state.update_data(description=message.text)
-    user = await db.user_by_tg_id(user_id)
+    user = await db.user_by_id(user_id)
     abonement = await db.abonement_create(
         name=(await state.get_data()).get("name"),
         owner=user,
@@ -281,8 +280,9 @@ async def process_good_description_abonement_command(
     await state.set_state(MainGroup.abonement_mode)
     await message.answer(
         **as_list(
-            "Абонемент создан.",
+            "Абонемент создан",
             Bold(abonement.name),
+            "",
             as_key_value("Ключ", Code(abonement.token)),
             "",
             "Вы в меню работы с абонементами.",
@@ -294,9 +294,7 @@ async def process_good_description_abonement_command(
 
 # Add new Abonement: WRONG ABONEMENT DESCRIPTION
 @router.message(StateFilter(AbonementGroup.abonement_description))
-async def process_wrong_description_abonement_command(
-    message: Message, state: FSMContext
-) -> None:
+async def process_wrong_description_abonement_command(message: Message) -> None:
     logger.info(f"FSM: abonement: WRONG description for abonement")
     await message.answer(
         **as_list(
@@ -308,9 +306,176 @@ async def process_wrong_description_abonement_command(
     )
 
 
+#
+# Abonement join: BEGIN
+#
+@router.message(
+    StateFilter(MainGroup.abonement_mode), F.text == "Присоединиться к абонементу"
+)
+async def process_join_abonement_command(message: Message, state: FSMContext) -> None:
+    logger.info(f"FSM: abonement: BEGIN join abonement")
+    await state.set_state(AbonementGroup.abonement_join)
+    await message.answer(
+        **as_list(
+            "Подключаем существующий абонемент.",
+            "",
+            Bold("Введите ключ абонемента"),
+            "/cancel - отменить подключение к абонементу",
+        ).as_kwargs(),
+        reply_markup=kb.no_keyboard,
+    )
+
+
+# Abonement join: GOOD key
+@router.message(StateFilter(AbonementGroup.abonement_join), F.text)
+async def process_good_key_join_abonement_command(
+    message: Message, state: FSMContext, user_id: int, db: Database
+) -> None:
+    logger.info(f"FSM: abonement: GOOD key for join abonement")
+    # Check key
+    abonement_token = message.text.lower() if message.text else None
+    if not abonement_token or not re.search(
+        r"^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+        abonement_token,
+    ):
+        await message.answer(
+            **as_list(
+                "Неверный формат ключа абонемента.",
+                "Должно быть так:",
+                Bold("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"),
+                "",
+                "Введите другой ключ.",
+                "/cancel - отменить подключение к абонементу",
+            ).as_kwargs()
+        )
+        return
+    # Key accepted, check abonement
+    await state.update_data(abonement_token=abonement_token)
+    await state.update_data(user_id=user_id)
+    abonement = await db.abonement_by_token(abonement_token)
+    if not abonement:
+        await message.answer(
+            **as_list(
+                "Неверный ключ абонемента.",
+                "Подходящих абонементов с таким ключом нет.",
+                "",
+                "Введите другой ключ.",
+                "/cancel - отменить подключение к абонементу",
+            ).as_kwargs()
+        )
+        return
+    # Key accepted, check owner
+    if abonement.owner_id == user_id:
+        await message.answer(
+            **as_list(
+                "Вы не можете присоединиться к своему абонементу.",
+                "",
+                "Введите другой ключ.",
+                "/cancel - отменить подключение к абонементу",
+            ).as_kwargs()
+        )
+        return
+    # Key accepted, check user
+    abonement_user = await db.abonement_user(user_id=user_id, abonement_id=abonement.id)
+    if abonement_user:
+        await message.answer(
+            **as_list(
+                "Вы уже присоединены к этому абонементу.",
+                Bold(abonement.name),
+                "Он есть в списке ваших абонементов.",
+                "",
+                "Введите другой ключ.",
+                "/cancel - отменить подключение к абонементу",
+            ).as_kwargs()
+        )
+        return
+
+    # Ask to add abonement
+    await state.update_data(abonement_id=abonement.id)
+    await state.set_state(AbonementGroup.abonement_accept)
+    await message.answer(
+        **as_list(
+            "Вы хотите присоединиться к абонементу?",
+            Bold(abonement.name),
+            "",
+            "/cancel - отменить подключение к абонементу",
+        ).as_kwargs(),
+        reply_markup=kb.yes_no_keyboard,
+    )
+
+
+# Abonement join: WRONG key
+@router.message(StateFilter(AbonementGroup.abonement_join))
+async def process_wrong_key_join_abonement_command(message: Message) -> None:
+    logger.info(f"FSM: abonement: WRONG key for join abonement")
+    await message.answer(
+        **as_list(
+            "Нужен ключ абонемента. Строка в формате:",
+            Bold("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"),
+            "",
+            "/cancel - отменить подключение к абонементу",
+        ).as_kwargs()
+    )
+
+
+# Abonement join: GOOD accept answer
+@router.message(StateFilter(AbonementGroup.abonement_accept), F.text.in_({"Да", "Нет"}))
+async def process_good_accept_join_abonement_command(
+    message: Message, state: FSMContext, db: Database
+) -> None:
+    logger.info(f"FSM: abonement: GOOD accept answer for join abonement")
+    data = await state.get_data()
+    await state.clear()
+    await state.set_state(MainGroup.abonement_mode)
+    if message.text == "Нет":
+        await message.answer(
+            **as_list(
+                "Не присоединились к абонементу.",
+                "",
+                "Вы в меню работы с абонементами.",
+                "/cancel - выйти в главное меню",
+            ).as_kwargs(),
+            reply_markup=kb.get_abonement_kb(),
+        )
+        return
+    # Add user to abonement
+    await db.abonement_user_add(
+        user_id=data.get("user_id"),
+        abonement_id=data.get("abonement_id"),
+        abonement_token=data.get("abonement_token"),
+    )
+    await message.answer(
+        **as_list(
+            "Присоединились к абонементу.",
+            "Теперь он в списке ваших абонементов.",
+            "",
+            "Вы в меню работы с абонементами.",
+            "/cancel - выйти в главное меню",
+        ).as_kwargs(),
+        reply_markup=kb.get_abonement_kb(),
+    )
+
+
+# Abonement join: WRONG accept answer
+@router.message(StateFilter(AbonementGroup.abonement_accept))
+async def process_wrong_accept_join_abonement_command(message: Message) -> None:
+    logger.info(f"FSM: abonement: WRONG accept answer for join abonement")
+    await message.answer(
+        **as_list(
+            "Неверный ответ. Только Да или Нет.",
+            "",
+            "/cancel - отменить подключение к абонементу",
+        ).as_kwargs()
+    )
+
+
 # Unknown command for Abonement
 @router.message(StateFilter(MainGroup.abonement_mode))
 async def process_abonement_unknown_command(message: Message) -> None:
     await message.answer(
-        "Неизвестная команда работы с абонементами.\nСправка - /help\nВыход - /cancel"
+        **as_list(
+            "Неизвестная команда работы с абонементами.",
+            "Справка - /help",
+            "Выход - /cancel",
+        ).as_kwargs()
     )

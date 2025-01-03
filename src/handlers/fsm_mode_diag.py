@@ -59,14 +59,15 @@ async def process_cancel_command(
 # Command /info in diag state
 @router.message(StateFilter(MainGroup.diag_mode), Command(commands=["info"]))
 async def process_info_command(
-    message: Message, db: Database, user_id: int, user_type: list[str]
+    message: Message, db: Database, user_id: int, user_tg_id: int, user_type: list[str]
 ) -> None:
     logger.info(f"FSM: diag: info command, user_id={user_id}, user_type={user_type}")
-    user = await db.user_by_tg_id(tg_id=user_id)
+    user = await db.user_by_id(user_id)
     content = Text(
         f"Пользователь. Выход - /cancel\n",
         as_marked_list(
             as_key_value("user_id", user_id),
+            as_key_value("user_tg_id", user_tg_id),
             as_key_value("user_type", user_type),
         ),
         Pre(user),

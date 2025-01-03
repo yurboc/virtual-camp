@@ -43,8 +43,8 @@ def get_generator_kb() -> ReplyKeyboardMarkup:
 def get_abonement_kb() -> ReplyKeyboardMarkup:
     buttons: list[KeyboardButton] = []
     buttons.append(KeyboardButton(text="Мои абонементы"))
-    buttons.append(KeyboardButton(text="Создать абонемент"))
-    buttons.append(KeyboardButton(text="Подключить абонемент"))
+    buttons.append(KeyboardButton(text="Создать новый абонемент"))
+    buttons.append(KeyboardButton(text="Присоединиться к абонементу"))
     buttons.append(KeyboardButton(text="Выход"))
     kb_builder = ReplyKeyboardBuilder()
     kb_builder.row(*buttons, width=2)
@@ -57,6 +57,12 @@ def get_abonement_kb() -> ReplyKeyboardMarkup:
 # GO TO MAIN MENU
 go_home_kb = ReplyKeyboardMarkup(
     keyboard=[[KeyboardButton(text="Главное меню")]], resize_keyboard=True
+)
+
+# YES-NO KEYBOARD
+yes_no_keyboard = ReplyKeyboardMarkup(
+    keyboard=[[KeyboardButton(text="Да"), KeyboardButton(text="Нет")]],
+    resize_keyboard=True,
 )
 
 # NO KEYBOARD

@@ -11,4 +11,5 @@ class AbonementGroup(StatesGroup):
     abonement_name = State()
     abonement_total_passes = State()
     abonement_description = State()
-    abonement_join_other = State()
+    abonement_join = State()
+    abonement_accept = State()
