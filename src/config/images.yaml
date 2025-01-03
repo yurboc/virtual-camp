@@ -1,0 +1,31 @@
+--- # FST-OTM tables
+
+- generator_name: nu2025
+  title: Школа НУ-2025
+  file: cover-2025-nu.jpg
+  width: 1920
+  height: 1080
+  frame-top-y: 630
+  frame-bottom-y: 940
+  frame-left-x: 300
+  frame-right-x: 780
+
+- generator_name: bu2025
+  title: Школа БУ-2025
+  file: cover-2025-bu.jpg
+  width: 1920
+  height: 1080
+  frame-top-y: 630
+  frame-bottom-y: 940
+  frame-left-x: 300
+  frame-right-x: 780
+
+- generator_name: su2025
+  title: Школа СУ-2025
+  file: cover-2025-su.jpg
+  width: 1920
+  height: 1080
+  frame-top-y: 630
+  frame-bottom-y: 940
+  frame-left-x: 300
+  frame-right-x: 780
