@@ -16,4 +16,3 @@ class AbonementGroup(StatesGroup):
     abonement_join = State()
     abonement_accept = State()
     abonement_open = State()
-    abonement_pass = State()

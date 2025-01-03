@@ -96,7 +96,9 @@ def get_abonement_control_kb(abonement: TgAbonement) -> Optional[InlineKeyboardM
         return None
     builder = InlineKeyboardBuilder()
     builder.button(
-        text="Посещения",
+        text=(
+            "Записать посещение" if abonement.total_passes == 0 else "Списать посещение"
+        ),
         callback_data=AbonementCallbackFactory(
             id=abonement.id, token=abonement.token, action="pass"
         ),
@@ -107,34 +109,16 @@ def get_abonement_control_kb(abonement: TgAbonement) -> Optional[InlineKeyboardM
             id=abonement.id, token=abonement.token, action="share"
         ),
     )
-    builder.adjust(2)
-    return builder.as_markup()
-
-
-# ABONEMENT PASS MENU
-def get_abonement_pass_kb(abonement: TgAbonement) -> Optional[InlineKeyboardMarkup]:
-    if not abonement:
-        return None
-    builder = InlineKeyboardBuilder()
     builder.button(
-        text=(
-            "Записать посещение" if abonement.total_passes == 0 else "Списать посещение"
-        ),
+        text="Выход",
         callback_data=AbonementCallbackFactory(
-            id=abonement.id, token=abonement.token, action="pass_accept"
+            id=abonement.id, token=abonement.token, action="exit"
         ),
     )
-    builder.button(
-        text="Ничего не делать",
-        callback_data=AbonementCallbackFactory(
-            id=abonement.id, token=abonement.token, action="pass_reject"
-        ),
-    )
-    builder.adjust(1)
+    builder.adjust(*[1, 2])
     return builder.as_markup()
 
-
-# GO TO MAIN MENU
+# GO TO MAIN KEYBOARD
 go_home_kb = ReplyKeyboardMarkup(
     keyboard=[[KeyboardButton(text="Главное меню")]], resize_keyboard=True
 )

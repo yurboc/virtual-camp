@@ -209,10 +209,27 @@ class Database:
         abonement_passes = result.scalars().all()
         return abonement_passes
 
+    # Abonement pass left
+    async def abonement_pass_left(self, abonement_id: int) -> Optional[int]:
+        abonement = await self.abonement_by_id(abonement_id)
+        total_passes = abonement.total_passes if abonement else None
+        if not total_passes:
+            return None
+        stmt = select(TgAbonementPass).where(
+            TgAbonementPass.abonement_id == abonement_id
+        )
+        result = await self.session.execute(stmt)
+        abonement_passes = result.scalars().all()
+        passes_count = len(abonement_passes)
+        return total_passes - passes_count
+
     # Abonement pass add
     async def abonement_pass_add(
         self, abonement_id: int, user_id: int
-    ) -> TgAbonementPass:
+    ) -> Optional[TgAbonementPass]:
+        pass_left = await self.abonement_pass_left(abonement_id)
+        if pass_left is not None and pass_left <= 0:
+            return None
         abonement_pass = TgAbonementPass(abonement_id=abonement_id, user_id=user_id)
         self.session.add(abonement_pass)
         await self.session.commit()

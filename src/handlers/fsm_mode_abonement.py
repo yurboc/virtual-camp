@@ -44,14 +44,17 @@ async def callbacks_abonement_open(
     await callback.answer()
     await state.set_state(AbonementGroup.abonement_open)
     abonement = await db.abonement_by_id(callback_data.id)
-    if not abonement or abonement.token != callback_data.token:
+    user = await db.user_by_tg_id(callback.from_user.id)
+    if not abonement or abonement.token != callback_data.token or not user:
         if callback.message and type(callback.message) == Message:
             await callback.message.answer(
-                f"Неверный ключ абонемента. Введите /cancel для выхода.",
+                f"Неверный ключ или пользователь. Введите /cancel для выхода.",
             )
         return
     if callback.message and type(callback.message) == Message:
         await callback.message.edit_reply_markup(None)
+        pass_list = await db.abonement_pass_list(abonement.id)
+        my_pass_list = await db.abonement_pass_list(abonement.id, user_id=user.id)
         await callback.message.answer(
             **as_list(
                 "Выбран абонемент",
@@ -66,61 +69,29 @@ async def callbacks_abonement_open(
                     if abonement.total_passes != 0
                     else "Без ограничения посещений"
                 ),
-            ).as_kwargs(),
-            reply_markup=kb.get_abonement_control_kb(abonement),
-        )
-
-
-# Pass Abonement
-@router.callback_query(
-    StateFilter(AbonementGroup.abonement_open),
-    AbonementCallbackFactory.filter(F.action == "pass"),
-)
-async def callbacks_abonement_pass(
-    callback: CallbackQuery,
-    callback_data: AbonementCallbackFactory,
-    state: FSMContext,
-    db: Database,
-):
-    await callback.answer()
-    abonement = await db.abonement_by_id(callback_data.id)
-    user = await db.user_by_tg_id(callback.from_user.id)
-    if not abonement or abonement.token != callback_data.token or not user:
-        if callback.message and type(callback.message) == Message:
-            await callback.message.answer(
-                "Неверный ключ абонемента или пользователь. Введите /cancel для выхода.",
-            )
-        return
-    if callback.message and type(callback.message) == Message and user:
-        await callback.message.edit_reply_markup(None)
-        pass_list = await db.abonement_pass_list(abonement.id)
-        my_pass_list = await db.abonement_pass_list(abonement.id, user_id=user.id)
-        await state.set_state(AbonementGroup.abonement_pass)
-        await callback.message.answer(
-            **as_list(
                 as_key_value("Совершено проходов", len(pass_list)),
                 as_key_value("Моих проходов", len(my_pass_list)),
                 *(
                     [
                         as_key_value(
                             "Осталось проходов",
-                            abonement.total_passes - len(my_pass_list),
+                            abonement.total_passes - len(pass_list),
                         ),
                         "",
                     ]
                     if abonement.total_passes != 0
                     else [""]
                 ),
-                "Записать сейчас проход?",
+                "Выберите действие",
             ).as_kwargs(),
-            reply_markup=kb.get_abonement_pass_kb(abonement),
+            reply_markup=kb.get_abonement_control_kb(abonement),
         )
 
 
 # Accept Abonement pass
 @router.callback_query(
-    StateFilter(AbonementGroup.abonement_pass),
-    AbonementCallbackFactory.filter(F.action == "pass_accept"),
+    StateFilter(AbonementGroup.abonement_open),
+    AbonementCallbackFactory.filter(F.action == "pass"),
 )
 async def callbacks_abonement_accept_pass(
     callback: CallbackQuery,
@@ -138,23 +109,34 @@ async def callbacks_abonement_accept_pass(
             )
         return
     abonement_pass = await db.abonement_pass_add(abonement.id, user.id)
-    if callback.message and type(callback.message) == Message and abonement_pass:
+    if callback.message and type(callback.message) == Message:
         await callback.message.edit_reply_markup(None)
         await state.set_state(MainGroup.abonement_mode)
-        await callback.message.answer(
-            **as_list(
-                "✅ Проход записан",
-                Bold(abonement_pass.ts.strftime("%d.%m.%Y %H:%M:%S")),
-                "Выход в меню управления абонементами",
-            ).as_kwargs(),
-            reply_markup=kb.get_abonement_kb(),
+        (
+            await callback.message.answer(
+                **as_list(
+                    "✅ Проход записан",
+                    Bold(abonement_pass.ts.strftime("%d.%m.%Y %H:%M:%S")),
+                    "Выход в меню управления абонементами",
+                ).as_kwargs(),
+                reply_markup=kb.get_abonement_kb(),
+            )
+            if abonement_pass
+            else await callback.message.answer(
+                **as_list(
+                    "❌ Проход не записан",
+                    Bold("На абонементе не осталось проходов"),
+                    "Выход в меню управления абонементами",
+                ).as_kwargs(),
+                reply_markup=kb.get_abonement_kb(),
+            )
         )
 
 
-# Reject Abonement pass
+# Reject Abonement
 @router.callback_query(
-    StateFilter(AbonementGroup.abonement_pass),
-    AbonementCallbackFactory.filter(F.action == "pass_reject"),
+    StateFilter(AbonementGroup.abonement_open),
+    AbonementCallbackFactory.filter(F.action == "exit"),
 )
 async def callbacks_abonement_reject_pass(
     callback: CallbackQuery,
