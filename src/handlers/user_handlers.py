@@ -5,7 +5,7 @@ from aiogram.types import Message
 from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
-from aiogram.utils.formatting import Text, Pre, as_list, as_marked_list, as_key_value
+from aiogram.utils.formatting import Text, Bold, as_list
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)
@@ -26,17 +26,18 @@ async def command_start_handler(message: Message) -> None:
 async def process_help_command(message: Message) -> None:
     logger.info(f"Got HELP command")
     await message.answer(
-        Text(
+        **Text(
             as_list(
-                "Справка:",
-                "/start - начать работу с ботом.",
-                "/help - вывести справку по текущему режиму.",
-                "/cancel - завершить текущий процесс.",
-                "/diag - войти в диагностический режим.",
-                "/generate - войти в режим генерации таблиц.",
-                "/abonement - войти в режим работы с абонементами.",
+                Bold("Общие команды:"),
+                "/start - переход в начало",
+                "/help - справка по текущему режиму",
+                "/cancel - выход из текущего режима",
+                Bold("Вам доступны режимы:"),
+                "/diag - диагностика бота",
+                "/generate - генерация таблиц ФСТ-ОТМ",
+                "/abonement - подсчет посещений и абонементы",
             )
-        )
+        ).as_kwargs()
     )
 
 

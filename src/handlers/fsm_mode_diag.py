@@ -35,7 +35,7 @@ async def process_help_command(message: Message):
     await message.answer(
         **Text(
             as_list(
-                "Справка:",
+                "Режим диагностики:",
                 "/cancel - завершить диагностику",
                 "/info - информация о пользователе",
             )

@@ -103,7 +103,7 @@ async def process_selected_table(
 @router.message(StateFilter(MainGroup.generator_mode), Command(commands=["help"]))
 async def process_help_command(message: Message) -> None:
     logger.info(f"FSM: generator: help command")
-    content_list = [Text("Справка: доступные задания:")]
+    content_list = [Text("Режим работы с таблицами ФСТ-ОТМ:")]
     for table in tables:
         content_list.append(
             as_key_value(key=table["generator_name"], value=table["title"])

@@ -127,11 +127,15 @@ class Database:
 
     # Abonement create
     async def abonement_create(
-        self, name: str, owner: TgUser, total_passes: int
+        self, name: str, owner: TgUser, total_passes: int = 0, description: str = None
     ) -> TgAbonement:
         abonement_uuid = str(uuid.uuid4())
         abonement = TgAbonement(
-            name=name, token=abonement_uuid, total_passes=total_passes, owner=owner
+            name=name,
+            token=abonement_uuid,
+            total_passes=total_passes,
+            description=description,
+            owner=owner,
         )
         self.session.add(abonement)
         await self.session.commit()

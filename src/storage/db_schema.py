@@ -111,6 +111,7 @@ class TgAbonement(Base):
     name: Mapped[str]
     token: Mapped[str]
     total_passes: Mapped[int]
+    description: Mapped[Optional[str]]
     create_ts: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,
         nullable=False,
