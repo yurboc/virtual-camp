@@ -1,9 +1,9 @@
 [Unit]
-Description=Virtual Camp Table Converter
+Description=Virtual Camp Worker
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/python tables_main.py
+ExecStart=/usr/bin/python worker_main.py
 WorkingDirectory=/home/yurboc/projects/virtual-camp/src/
 User=yurboc
 Group=yurboc

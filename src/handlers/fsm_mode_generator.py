@@ -85,7 +85,12 @@ async def process_selected_table(
     task_uuid = str(uuid.uuid4())
     user = await db.user_by_id(user_id)
     task = await db.task_add(task_uuid=task_uuid, user=user)
-    msg = {"uuid": task_uuid, "task_id": task.id, "job": job}
+    msg = {
+        "uuid": task_uuid,
+        "task_id": task.id,
+        "job_type": "table_generator",
+        "job": job,
+    }
     queue_publish_message(msg)
     await message.answer(
         **Text(
