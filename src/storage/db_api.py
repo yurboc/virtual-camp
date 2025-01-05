@@ -6,6 +6,7 @@ from storage.db_schema import TgUpdate, TgMessage, TgUser, TgNotification, TgTas
 from storage.db_schema import TgAbonement, TgAbonementUser, TgAbonementPass
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.expression import func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
@@ -96,14 +97,14 @@ class Database:
     # Get task creator
     async def task_user(self, task_id: int) -> Optional[TgUser]:
         # stmt = select(TgTask).options(joinedload(TgTask.user)).where(TgTask.id == task_id)
-        stmt = select(TgTask).where(TgTask.id == task_id)
-        result = await self.session.execute(stmt)
-        task = result.scalars().first()
+        stmt_task = select(TgTask).where(TgTask.id == task_id)
+        result_task = await self.session.execute(stmt_task)
+        task = result_task.scalars().first()
         if not task:
             return None
-        stmt = select(TgUser).where(TgUser.id == task.user_id)
-        result = await self.session.execute(stmt)
-        user = result.scalars().first()
+        stmt_user = select(TgUser).where(TgUser.id == task.user_id)
+        result_user = await self.session.execute(stmt_user)
+        user = result_user.scalars().first()
         return user
 
     # Store notification
@@ -192,19 +193,41 @@ class Database:
         abonement_user = result.scalars().first()
         return abonement_user
 
-    # Abonement pass list
-    async def abonement_pass_list(
+    # Abonement pass count
+    async def abonement_pass_count(
         self, abonement_id: int, user_id: Optional[int] = None
-    ) -> Sequence[TgAbonementPass]:
+    ) -> int:
         if not user_id:
-            stmt = select(TgAbonementPass).where(
-                TgAbonementPass.abonement_id == abonement_id
+            stmt = (
+                func.count()
+                .select()
+                .where(TgAbonementPass.abonement_id == abonement_id)
             )
         else:
-            stmt = select(TgAbonementPass).where(
-                TgAbonementPass.abonement_id == abonement_id,
-                TgAbonementPass.user_id == user_id,
+            stmt = (
+                func.count()
+                .select()
+                .where(
+                    TgAbonementPass.abonement_id == abonement_id,
+                    TgAbonementPass.user_id == user_id,
+                )
             )
+        result = await self.session.execute(stmt)
+        abonement_passes = result.scalar() or 0
+        return abonement_passes
+
+    # Abonement pass list
+    async def abonement_pass_list(
+        self, abonement_id: int, limit: int, offset: int
+    ) -> Sequence[TgAbonementPass]:
+        stmt = (
+            select(TgAbonementPass)
+            .options(joinedload(TgAbonementPass.user))
+            .where(TgAbonementPass.abonement_id == abonement_id)
+            .order_by(TgAbonementPass.id.desc())
+            .limit(limit)
+            .offset(offset)
+        )
         result = await self.session.execute(stmt)
         abonement_passes = result.scalars().all()
         return abonement_passes

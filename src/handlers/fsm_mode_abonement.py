@@ -12,6 +12,8 @@ from aiogram.utils.formatting import (
     Code,
     Bold,
     Italic,
+    TextLink,
+    as_line,
     as_list,
     as_key_value,
     as_marked_list,
@@ -32,7 +34,10 @@ router = Router(name=__name__)
 
 # Open Abonement
 @router.callback_query(
-    StateFilter(MainGroup.abonement_mode),
+    or_f(
+        StateFilter(MainGroup.abonement_mode),
+        StateFilter(AbonementGroup.abonement_open),
+    ),
     AbonementCallbackFactory.filter(F.action == "open"),
 )
 async def callbacks_abonement_open(
@@ -42,6 +47,7 @@ async def callbacks_abonement_open(
     db: Database,
 ):
     await callback.answer()
+    await state.set_data({"offset": 0, "limit": 10})
     await state.set_state(AbonementGroup.abonement_open)
     abonement = await db.abonement_by_id(callback_data.id)
     user = await db.user_by_tg_id(callback.from_user.id)
@@ -53,8 +59,8 @@ async def callbacks_abonement_open(
         return
     if callback.message and type(callback.message) == Message:
         await callback.message.edit_reply_markup(None)
-        pass_list = await db.abonement_pass_list(abonement.id)
-        my_pass_list = await db.abonement_pass_list(abonement.id, user_id=user.id)
+        pass_count = await db.abonement_pass_count(abonement.id)
+        my_pass_count = await db.abonement_pass_count(abonement.id, user_id=user.id)
         await callback.message.answer(
             **as_list(
                 "Выбран абонемент",
@@ -69,13 +75,13 @@ async def callbacks_abonement_open(
                     if abonement.total_passes != 0
                     else "Без ограничения посещений"
                 ),
-                as_key_value("Совершено проходов", len(pass_list)),
-                as_key_value("Моих проходов", len(my_pass_list)),
+                as_key_value("Совершено проходов", pass_count),
+                as_key_value("Из них мои проходы", my_pass_count),
                 *(
                     [
                         as_key_value(
                             "Осталось проходов",
-                            abonement.total_passes - len(pass_list),
+                            abonement.total_passes - pass_count,
                         ),
                         "",
                     ]
@@ -206,6 +212,93 @@ async def callbacks_abonement_share(
             ).as_kwargs(),
             reply_markup=kb.get_abonement_kb(),
         )
+
+
+# List of visits for Abonement
+@router.callback_query(
+    StateFilter(AbonementGroup.abonement_open),
+    AbonementCallbackFactory.filter(F.action.in_(["history", "prev", "next"])),
+)
+async def callbacks_abonement_visits(
+    callback: CallbackQuery,
+    callback_data: AbonementCallbackFactory,
+    state: FSMContext,
+    db: Database,
+):
+    await callback.answer()
+    abonement = await db.abonement_by_id(callback_data.id)
+    if not abonement or abonement.token != callback_data.token:
+        if callback.message and type(callback.message) == Message:
+            await callback.message.answer(
+                f"Неверный ключ абонемента. Введите /cancel для выхода.",
+            )
+        return
+    if callback.message and type(callback.message) == Message:
+        # Calculate pagination
+        total = await db.abonement_pass_count(abonement.id)
+        limit = (await state.get_data()).get("limit", 10)
+        offset = (await state.get_data()).get("offset", 0)
+        if callback_data.action == "prev":
+            if offset == 0:
+                return
+            offset -= limit
+            if offset > limit:
+                offset -= limit
+            else:
+                offset = 0
+        elif callback_data.action == "next":
+            if offset + limit >= total:
+                return
+            offset += limit
+        await state.set_data({"offset": offset, "limit": limit})
+        await callback.message.edit_reply_markup(None)
+        # Get visits for current page
+        visits_list = await db.abonement_pass_list(
+            abonement.id, limit=limit, offset=offset
+        )
+        visits_text = []
+        for visit in visits_list:
+            visits_text += [
+                Text(
+                    visit.ts.strftime("%d.%m.%Y %H:%M"),
+                    " ",
+                    TextLink(visit.user.name, url=f"tg://user?id={visit.user.tg_id}"),
+                    (
+                        Text(f" (@{visit.user.tg_username})")
+                        if visit.user.tg_username
+                        else ""
+                    ),
+                ),
+            ]
+        answer = as_list(
+            (
+                Text(
+                    "Проходы с ",
+                    Bold(offset + 1),
+                    " по ",
+                    Bold(offset + len(visits_list)),
+                    " из ",
+                    Bold(total),
+                )
+                if total > 0
+                else Text("Проходов пока не было.")
+            ),
+            *(visits_text),
+        )
+        if callback_data.action in ["prev", "next"]:
+            await callback.message.edit_text(
+                **answer.as_kwargs(),
+                reply_markup=kb.get_abonement_history_kb(
+                    abonement, offset, limit, total
+                ),
+            )
+        else:
+            await callback.message.answer(
+                **answer.as_kwargs(),
+                reply_markup=kb.get_abonement_history_kb(
+                    abonement, offset, limit, total
+                ),
+            )
 
 
 #

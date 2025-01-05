@@ -104,9 +104,27 @@ def get_abonement_control_kb(abonement: TgAbonement) -> Optional[InlineKeyboardM
         ),
     )
     builder.button(
+        text="История посещений",
+        callback_data=AbonementCallbackFactory(
+            id=abonement.id, token=abonement.token, action="history"
+        ),
+    )
+    builder.button(
         text="Поделиться",
         callback_data=AbonementCallbackFactory(
             id=abonement.id, token=abonement.token, action="share"
+        ),
+    )
+    builder.button(
+        text="Изменить",
+        callback_data=AbonementCallbackFactory(
+            id=abonement.id, token=abonement.token, action="edit"
+        ),
+    )
+    builder.button(
+        text="Удалить",
+        callback_data=AbonementCallbackFactory(
+            id=abonement.id, token=abonement.token, action="delete"
         ),
     )
     builder.button(
@@ -115,8 +133,46 @@ def get_abonement_control_kb(abonement: TgAbonement) -> Optional[InlineKeyboardM
             id=abonement.id, token=abonement.token, action="exit"
         ),
     )
-    builder.adjust(*[1, 2])
+    builder.adjust(*[1, 1, 3, 1], repeat=False)
     return builder.as_markup()
+
+
+# ABONEMENT HISTORY MENU
+def get_abonement_history_kb(
+    abonement: TgAbonement, offset: int = 0, limit: int = 0, total: int = 0
+) -> Optional[InlineKeyboardMarkup]:
+    if not abonement:
+        return None
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text="Назад",
+        callback_data=AbonementCallbackFactory(
+            id=abonement.id, token=abonement.token, action="open"
+        ),
+    )
+    if offset > 0:
+        builder.button(
+            text="⬅️",
+            callback_data=AbonementCallbackFactory(
+                id=abonement.id, token=abonement.token, action="prev"
+            ),
+        )
+    if offset + limit < total:
+        builder.button(
+            text="➡️",
+            callback_data=AbonementCallbackFactory(
+                id=abonement.id, token=abonement.token, action="next"
+            ),
+        )
+    builder.button(
+        text="Выход",
+        callback_data=AbonementCallbackFactory(
+            id=abonement.id, token=abonement.token, action="exit"
+        ),
+    )
+    builder.adjust(4)
+    return builder.as_markup()
+
 
 # GO TO MAIN KEYBOARD
 go_home_kb = ReplyKeyboardMarkup(
