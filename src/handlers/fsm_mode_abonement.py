@@ -197,7 +197,8 @@ async def callbacks_abonement_share(
                 "Поделиться:",
                 (
                     await create_start_link(
-                        bot=callback.message.bot, payload=f"abonement_{abonement.token}"
+                        bot=callback.message.bot,
+                        payload=f"abonement_{abonement.token}",
                     )
                     if callback.message.bot
                     else Bold("недоступно")
@@ -302,6 +303,9 @@ async def process_my_abonements_command(
 ) -> None:
     logger.info(f"FSM: abonement: list my abonements")
     user = await db.user_by_id(user_id)
+    if not user:
+        logger.warning(f"FSM: abonement: user {user_id} not found")
+        return
     # Find my abonements
     my_abonements = await db.abonements_list_by_owner(user)
     my_abonements_list = [abonement.name for abonement in my_abonements]
@@ -482,11 +486,17 @@ async def process_good_description_abonement_command(
     else:
         await state.update_data(description=message.text)
     user = await db.user_by_id(user_id)
+    abonement_name = (await state.get_data()).get("name")
+    total_passes = (await state.get_data()).get("total_passes")
+    description = (await state.get_data()).get("description")
+    if not user or not abonement_name or not total_passes or not description:
+        logger.warning(f"FSM: abonement: user {user_id} not found or wrong state")
+        return
     abonement = await db.abonement_create(
-        name=(await state.get_data()).get("name"),
+        name=abonement_name,
         owner=user,
-        total_passes=(await state.get_data()).get("total_passes"),
-        description=(await state.get_data()).get("description"),
+        total_passes=total_passes,
+        description=description,
     )
     logger.info(f"Created new abonement {abonement.id}")
     # Reset state to Abonenment mode
@@ -666,10 +676,16 @@ async def process_good_accept_join_abonement_command(
         )
         return
     # Add user to abonement
+    user_id = data.get("user_id")
+    abonement_id = data.get("abonement_id")
+    abonement_token = data.get("abonement_token")
+    if not user_id or not abonement_id or not abonement_token:
+        logger.warning(f"FSM: abonement: wrong state")
+        return
     await db.abonement_user_add(
-        user_id=data.get("user_id"),
-        abonement_id=data.get("abonement_id"),
-        abonement_token=data.get("abonement_token"),
+        user_id=user_id,
+        abonement_id=abonement_id,
+        abonement_token=abonement_token,
     )
     await message.answer(
         **as_list(
