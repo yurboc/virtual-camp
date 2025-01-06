@@ -13,29 +13,30 @@ router = Router(name=__name__)
 
 # Command /start on default state
 @router.message(StateFilter(default_state), CommandStart())
-async def command_start_handler(message: Message) -> None:
+async def command_start_handler(message: Message, user_type: list[str]) -> None:
     logger.info(f"Got START command")
     await message.answer(
         **Text(
             as_list("Вас приветствует бот Virtual Camp!", "", "Вы в главном меню.")
         ).as_kwargs(),
-        reply_markup=kb.get_main_kb(),
+        reply_markup=kb.get_main_kb(user_type),
     )
 
 
 # Command /help on default state
-@router.message(StateFilter(default_state), Command(commands=["help"]))
+@router.message(StateFilter(default_state), Command("help"))
 async def process_help_command(message: Message) -> None:
     logger.info(f"Got HELP command")
     await message.answer(
         **Text(
             as_list(
                 Bold("Общие команды:"),
-                "/start - переход в начало",
+                "/start - запуск бота",
                 "/help - справка по текущему режиму",
                 "/cancel - выход из текущего режима",
                 Bold("Вам доступны режимы:"),
                 "/diag - диагностика бота",
+                "/register - регистрация пользователя",
                 "/generate - генерация таблиц ФСТ-ОТМ",
                 "/abonement - подсчет посещений и абонементы",
             )
@@ -44,7 +45,7 @@ async def process_help_command(message: Message) -> None:
 
 
 # Command cancel in WRONG state (not handled active process)
-@router.message(~StateFilter(default_state), Command(commands=["cancel"]))
+@router.message(~StateFilter(default_state), Command("cancel"))
 async def send_state_cancel_answer(message: Message, state: FSMContext):
     logger.warning(f"Got CANCEL command in WRONG state")
     logger.warning(f"State: {await state.get_state()}")

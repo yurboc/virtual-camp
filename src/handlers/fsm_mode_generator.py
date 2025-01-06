@@ -56,7 +56,7 @@ def queue_publish_message(msg: dict) -> None:
 # Entering FST-OTM Tables Generator mode
 @router.message(
     StateFilter(default_state),
-    or_f(Command(commands=["generate"]), F.text == "Генератор таблиц"),
+    or_f(Command("generate"), F.text == "Генератор таблиц"),
 )
 async def process_generator_command(message: Message, state: FSMContext) -> None:
     logger.info(f"FSM: generator: entering generator mode")
@@ -105,7 +105,7 @@ async def process_selected_table(
 
 
 # Help command for Generator
-@router.message(StateFilter(MainGroup.generator_mode), Command(commands=["help"]))
+@router.message(StateFilter(MainGroup.generator_mode), Command("help"))
 async def process_help_command(message: Message) -> None:
     logger.info(f"FSM: generator: help command")
     content_list = [Text("Режим работы с таблицами ФСТ-ОТМ:")]
@@ -121,14 +121,16 @@ async def process_help_command(message: Message) -> None:
 # Cancel command for Generator
 @router.message(
     StateFilter(MainGroup.generator_mode),
-    (or_f(Command(commands=["cancel"]), F.text == "Выход", F.text == "Главное меню")),
+    (or_f(Command("cancel"), F.text.in_(["Выход", "Главное меню"]))),
 )
-async def process_cancel_command(message: Message, state: FSMContext) -> None:
+async def process_cancel_command(
+    message: Message, state: FSMContext, user_type: list[str]
+) -> None:
     logger.info(f"FSM: generator: cancel command")
     await state.clear()
     await message.answer(
         text="Завершение генерации. Вы в главном меню.",
-        reply_markup=kb.get_main_kb(),
+        reply_markup=kb.get_main_kb(user_type),
     )
 
 

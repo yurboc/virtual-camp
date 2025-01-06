@@ -16,14 +16,12 @@ class AbonementCallbackFactory(CallbackData, prefix="abonement"):
 
 # MAIN MENU
 def get_main_kb(user_type: list[str] = ["unknown"]) -> ReplyKeyboardMarkup:
-    # In future add here "menu_video", "menu_trans", "menu_fst"
-    buttons_name_reg = ["Генератор таблиц", "Диагностика", "Абонементы"]
-    buttons_name_unreg = ["Диагностика", "Генератор таблиц", "Абонементы"]
+    buttons_name_reg = ["Диагностика", "Генератор таблиц", "Абонементы"]
+    buttons_name_unreg = ["Регистрация"] + buttons_name_reg
     if "registered" in user_type:
         buttons_name = buttons_name_reg
     else:
         buttons_name = buttons_name_unreg
-
     buttons: list[KeyboardButton] = []
     for name in buttons_name:
         buttons.append(KeyboardButton(text=name))
@@ -192,6 +190,19 @@ go_home_kb = ReplyKeyboardMarkup(
 # YES-NO KEYBOARD
 yes_no_keyboard = ReplyKeyboardMarkup(
     keyboard=[[KeyboardButton(text="Да"), KeyboardButton(text="Нет")]],
+    resize_keyboard=True,
+)
+
+# AGREEMENT KEYBOARD
+agreement_keyboard = ReplyKeyboardMarkup(
+    keyboard=[[KeyboardButton(text="✅ Согласен"), KeyboardButton(text="Выход")]],
+    resize_keyboard=True,
+)
+
+# GET CONTACT KEYBOARD
+get_contact_keyboard = ReplyKeyboardMarkup(
+    keyboard=[[KeyboardButton(text="☎ Поделиться", request_contact=True)]],
+    one_time_keyboard=True,
     resize_keyboard=True,
 )
 

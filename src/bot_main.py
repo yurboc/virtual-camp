@@ -16,6 +16,7 @@ from handlers import (
     main_menu_handlers,
     other_handlers,
     fsm_mode_diag,
+    fsm_mode_register,
     fsm_mode_generator,
     fsm_mode_abonement,
 )
@@ -71,6 +72,7 @@ async def async_main() -> None:
     # Add routers
     dp.include_router(fsm_mode_diag.router)
     dp.include_router(deep_link_handlers.router)
+    dp.include_router(fsm_mode_register.router)
     dp.include_router(fsm_mode_generator.router)
     dp.include_router(fsm_mode_abonement.router)
     dp.include_router(main_menu_handlers.router)

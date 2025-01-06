@@ -59,16 +59,29 @@ class Database:
             await self.session.commit()
         return user
 
+    # Update user
+    async def user_update(self, user: TgUser) -> Optional[TgUser]:
+        stmt = select(TgUser).where(TgUser.id == user.id)
+        result = await self.session.execute(stmt)
+        db_user = result.scalars().first()
+        if not db_user:
+            logger.warning(f"User {user.id} not found in DB")
+            return None
+        logger.info(f"Update user {user.id}")
+        db_user = user
+        await self.session.commit()
+        return db_user
+
     # Get user by id
     async def user_by_id(self, user_id: int) -> Optional[TgUser]:
         users = await self.session.execute(select(TgUser).where(TgUser.id == user_id))
-        user = users.scalar()
+        user = users.scalars().first()
         return user
 
     # Get user by tg_id
     async def user_by_tg_id(self, tg_id: int) -> Optional[TgUser]:
         users = await self.session.execute(select(TgUser).where(TgUser.tg_id == tg_id))
-        user = users.scalar()
+        user = users.scalars().first()
         return user
 
     # Get user status

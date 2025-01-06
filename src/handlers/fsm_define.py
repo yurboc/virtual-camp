@@ -8,6 +8,14 @@ class MainGroup(StatesGroup):
     abonement_mode = State()
 
 
+# FSM Register group
+class RegisterGroup(StatesGroup):
+    agreement = State()
+    phone = State()
+    name = State()
+    finish = State()
+
+
 # FSM Abonement group
 class AbonementGroup(StatesGroup):
     abonement_name = State()

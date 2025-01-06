@@ -424,7 +424,7 @@ async def callbacks_abonement_delete(
 # Entering Abonement mode
 @router.message(
     StateFilter(default_state),
-    or_f(Command(commands=["abonement"]), F.text == "Абонементы"),
+    or_f(Command("abonement"), F.text == "Абонементы"),
 )
 async def process_abonement_command(message: Message, state: FSMContext) -> None:
     logger.info(f"FSM: abonement: entering abonement mode")
@@ -441,7 +441,7 @@ async def process_abonement_command(message: Message, state: FSMContext) -> None
 
 
 # Help command for Abonement mode
-@router.message(StateFilter(MainGroup.abonement_mode), Command(commands=["help"]))
+@router.message(StateFilter(MainGroup.abonement_mode), Command("help"))
 async def process_abonement_mode_help_command(message: Message) -> None:
     logger.info(f"FSM: abonement mode: help command")
     await message.answer(
@@ -455,7 +455,7 @@ async def process_abonement_mode_help_command(message: Message) -> None:
 
 
 # Help command for Abonement Control mode
-@router.message(StateFilter(AbonementGroup), Command(commands=["help"]))
+@router.message(StateFilter(AbonementGroup), Command("help"))
 async def process_abonement_ctrl_help_command(message: Message) -> None:
     logger.info(f"FSM: abonement control: help command")
     await message.answer(
@@ -471,21 +471,23 @@ async def process_abonement_ctrl_help_command(message: Message) -> None:
 # Cancel command for Abonement
 @router.message(
     StateFilter(MainGroup.abonement_mode),
-    (or_f(Command(commands=["cancel"]), F.text == "Выход")),
+    (or_f(Command("cancel"), F.text == "Выход")),
 )
-async def process_abonement_cancel_command(message: Message, state: FSMContext) -> None:
+async def process_abonement_cancel_command(
+    message: Message, state: FSMContext, user_type: list[str]
+) -> None:
     logger.info(f"FSM: abonement: cancel command")
     await state.clear()
     await message.answer(
         text="Завершение работы с абонементами. Вы в главном меню.",
-        reply_markup=kb.get_main_kb(),
+        reply_markup=kb.get_main_kb(user_type),
     )
 
 
 # Cancel command for Abonement OPERATION mode
 @router.message(
     StateFilter(AbonementGroup),
-    (or_f(Command(commands=["cancel"]), F.text == "Выход")),
+    (or_f(Command("cancel"), F.text == "Выход")),
 )
 async def process_abonement_op_cancel_command(
     message: Message, state: FSMContext

@@ -17,7 +17,7 @@ router = Router(name=__name__)
 # Entering diagnostic mode
 @router.message(
     StateFilter(default_state),
-    or_f(Command(commands=["diag"]), F.text == "Диагностика"),
+    or_f(Command("diag"), F.text == "Диагностика"),
 )
 async def process_diag_command(message: Message, state: FSMContext) -> None:
     logger.info(f"FSM: diag: entering diag mode")
@@ -29,7 +29,7 @@ async def process_diag_command(message: Message, state: FSMContext) -> None:
 
 
 # Command /help in diag state
-@router.message(StateFilter(MainGroup.diag_mode), Command(commands=["help"]))
+@router.message(StateFilter(MainGroup.diag_mode), Command("help"))
 async def process_help_command(message: Message):
     logger.info(f"FSM: diag: help command")
     await message.answer(
@@ -44,7 +44,7 @@ async def process_help_command(message: Message):
 
 
 # Command /cancel in diag state
-@router.message(StateFilter(MainGroup.diag_mode), Command(commands=["cancel"]))
+@router.message(StateFilter(MainGroup.diag_mode), Command("cancel"))
 async def process_cancel_command(
     message: Message, state: FSMContext, user_type: list[str]
 ):
@@ -57,7 +57,7 @@ async def process_cancel_command(
 
 
 # Command /info in diag state
-@router.message(StateFilter(MainGroup.diag_mode), Command(commands=["info"]))
+@router.message(StateFilter(MainGroup.diag_mode), Command("info"))
 async def process_info_command(
     message: Message, db: Database, user_id: int, user_tg_id: int, user_type: list[str]
 ) -> None:

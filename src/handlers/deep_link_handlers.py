@@ -20,6 +20,7 @@ async def command_start_handler(
     state: FSMContext,
     db: Database,
     user_id: int,
+    user_type: list[str],
 ) -> None:
     logger.info(f"Got START command with deep linking")
     logger.info(f"Got link parameters: {command.args}")
@@ -67,5 +68,5 @@ async def command_start_handler(
                     "Вы в главном меню.",
                 )
             ).as_kwargs(),
-            reply_markup=kb.get_main_kb(),
+            reply_markup=kb.get_main_kb(user_type),
         )
