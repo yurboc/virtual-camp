@@ -4,7 +4,7 @@ from typing import Optional, Sequence, Union
 from aiogram.types import TelegramObject, User, Message
 from storage.db_schema import TgUpdate, TgMessage, TgUser, TgNotification, TgTask
 from storage.db_schema import TgAbonement, TgAbonementUser, TgAbonementPass
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.expression import func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -116,7 +116,10 @@ class Database:
 
     # Abonements list for owner
     async def abonements_list_by_owner(self, user: TgUser) -> Sequence[TgAbonement]:
-        stmt = select(TgAbonement).where(TgAbonement.owner_id == user.id)
+        stmt = select(TgAbonement).where(
+            TgAbonement.owner_id == user.id,
+            or_(TgAbonement.hidden == None, TgAbonement.hidden != True),
+        )
         result = await self.session.execute(stmt)
         abonements = result.scalars().all()
         return abonements
@@ -126,7 +129,10 @@ class Database:
         stmt = (
             select(TgAbonement)
             .join(TgAbonementUser)
-            .where(TgAbonementUser.user_id == user.id)
+            .where(
+                TgAbonementUser.user_id == user.id,
+                or_(TgAbonement.hidden == None, TgAbonement.hidden != True),
+            )
         )
         result = await self.session.execute(stmt)
         abonements = result.scalars().all()
@@ -170,6 +176,25 @@ class Database:
         await self.session.commit()
         return abonement
 
+    # Abonement delete
+    async def abonement_delete(self, abonement_id: int, user_id: int) -> bool:
+        abonement = await self.abonement_by_id(abonement_id)
+        # Check abonement
+        if not abonement:
+            return False
+        # For user: "unlink" abonement
+        if abonement.owner_id != user_id:
+            abonement_user = await self.abonement_user(user_id, abonement_id)
+            if not abonement_user:
+                return False
+            await self.session.delete(abonement_user)
+        # For owner: "delete" abonement
+        else:
+            abonement.hidden = True  # not "await self.session.delete(abonement)"
+        # Save changes
+        await self.session.commit()
+        return True
+
     # Abonement by token
     async def abonement_by_token(self, token: str) -> Optional[TgAbonement]:
         stmt = select(TgAbonement).where(TgAbonement.token == token)
@@ -192,9 +217,7 @@ class Database:
         abonement = await self.abonement_by_id(abonement_id)
         if not user or not abonement or abonement.token != abonement_token:
             return None
-        abonement_user = TgAbonementUser(
-            abonement=abonement, user=user, permission="user"
-        )
+        abonement_user = TgAbonementUser(abonement=abonement, user=user)
         self.session.add(abonement_user)
         await self.session.commit()
         return abonement_user
@@ -251,24 +274,23 @@ class Database:
         return abonement_passes
 
     # Abonement pass left
-    async def abonement_pass_left(self, abonement_id: int) -> Optional[int]:
-        abonement = await self.abonement_by_id(abonement_id)
-        total_passes = abonement.total_passes if abonement else None
+    async def abonement_pass_left(self, abonement: TgAbonement) -> Optional[int]:
+        total_passes = abonement.total_passes
         if not total_passes:
             return None
-        stmt = select(TgAbonementPass).where(
-            TgAbonementPass.abonement_id == abonement_id
-        )
+        stmt = func.count().select().where(TgAbonementPass.abonement_id == abonement.id)
         result = await self.session.execute(stmt)
-        abonement_passes = result.scalars().all()
-        passes_count = len(abonement_passes)
+        passes_count = result.scalar() or 0
         return total_passes - passes_count
 
     # Abonement pass add
     async def abonement_pass_add(
         self, abonement_id: int, user_id: int
     ) -> Optional[TgAbonementPass]:
-        pass_left = await self.abonement_pass_left(abonement_id)
+        abonement = await self.abonement_by_id(abonement_id)
+        if not abonement or abonement.hidden:
+            return None
+        pass_left = await self.abonement_pass_left(abonement)
         if pass_left is not None and pass_left <= 0:
             return None
         abonement_pass = TgAbonementPass(abonement_id=abonement_id, user_id=user_id)

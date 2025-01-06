@@ -13,7 +13,6 @@ from aiogram.utils.formatting import (
     Bold,
     Italic,
     TextLink,
-    as_line,
     as_list,
     as_key_value,
     as_marked_list,
@@ -118,24 +117,22 @@ async def callbacks_abonement_accept_pass(
     if callback.message and type(callback.message) == Message:
         await callback.message.edit_reply_markup(None)
         await state.set_state(MainGroup.abonement_mode)
-        (
-            await callback.message.answer(
-                **as_list(
-                    "✅ Проход записан",
-                    Bold(abonement_pass.ts.strftime("%d.%m.%Y %H:%M:%S")),
-                    "Выход в меню управления абонементами",
-                ).as_kwargs(),
-                reply_markup=kb.get_abonement_kb(),
-            )
-            if abonement_pass
-            else await callback.message.answer(
-                **as_list(
-                    "❌ Проход не записан",
-                    Bold("На абонементе не осталось проходов"),
-                    "Выход в меню управления абонементами",
-                ).as_kwargs(),
-                reply_markup=kb.get_abonement_kb(),
-            )
+        if abonement_pass:
+            result = [
+                "✅ Проход записан",
+                Bold(abonement_pass.ts.strftime("%d.%m.%Y %H:%M:%S")),
+            ]
+        else:
+            result = [
+                "❌ Проход не записан",
+                Bold("На абонементе не осталось проходов"),
+            ]
+        await callback.message.answer(
+            **as_list(
+                *result,
+                "Выход в меню управления абонементами",
+            ).as_kwargs(),
+            reply_markup=kb.get_abonement_kb(),
         )
 
 
@@ -354,6 +351,65 @@ async def callbacks_abonement_edit(
                     "",
                     Bold("Введите новое название"),
                     "/cancel - отменить редактирование абонемента",
+                )
+            ).as_kwargs(),
+            reply_markup=kb.no_keyboard,
+        )
+
+
+# Delete Abonement
+@router.callback_query(
+    StateFilter(AbonementGroup.abonement_open),
+    AbonementCallbackFactory.filter(F.action == "delete"),
+)
+async def callbacks_abonement_delete(
+    callback: CallbackQuery,
+    callback_data: AbonementCallbackFactory,
+    state: FSMContext,
+    db: Database,
+):
+    await callback.answer()
+    abonement = await db.abonement_by_id(callback_data.id)
+    user = await db.user_by_tg_id(callback.from_user.id)
+    if not abonement or abonement.token != callback_data.token or not user:
+        if callback.message and type(callback.message) == Message:
+            await callback.message.answer(
+                f"Неверный ключ абонемента. Введите /cancel для выхода.",
+            )
+        return
+    if callback.message and type(callback.message) == Message:
+        await callback.message.edit_reply_markup(None)
+        await state.set_data(
+            {
+                "abonement_id": abonement.id,
+                "abonement_key": abonement.token,
+                "operation": "delete" if user.id == abonement.owner_id else "unlink",
+            }
+        )
+        await state.set_state(AbonementGroup.abonement_delete)
+        await callback.message.answer(
+            **Text(
+                as_list(
+                    (
+                        "🗑 Удаление абонемента"
+                        if user.id == abonement.owner_id
+                        else "⚠️ Отключение абонемента"
+                    ),
+                    as_key_value("Название", abonement.name),
+                    "",
+                    Text(
+                        "Отправьте ",
+                        Bold("да"),
+                        " в ответ, если хотите ",
+                        (
+                            Bold("удалить")
+                            if user.id == abonement.owner_id
+                            else Bold("отключить")
+                        ),
+                        " его.",
+                    ),
+                    "",
+                    "/cancel - отменить удаление абонемента",
                 )
             ).as_kwargs(),
             reply_markup=kb.no_keyboard,
@@ -801,7 +857,18 @@ async def process_good_key_join_abonement_command(
             ).as_kwargs()
         )
         return
-    # Abonement found. Check user is not owner
+    # Abonement found. Check if abonement is active
+    if abonement.hidden:
+        await message.answer(
+            **as_list(
+                "Этот абонемент был удален.",
+                "",
+                "Введите другой ключ.",
+                "/cancel - отменить подключение к абонементу",
+            ).as_kwargs()
+        )
+        return
+    # Abonement good. Check user is not owner
     if abonement.owner_id == user_id:
         await message.answer(
             **as_list(
@@ -909,6 +976,50 @@ async def process_wrong_accept_join_abonement_command(message: Message) -> None:
             "/cancel - отменить подключение к абонементу",
         ).as_kwargs()
     )
+
+
+# Abonement delete: got answer
+@router.message(StateFilter(AbonementGroup.abonement_delete))
+async def process_good_delete_abonement_command(
+    message: Message, state: FSMContext, user_id: int, db: Database
+) -> None:
+    logger.info(f"FSM: abonement: GOOD delete answer for abonement")
+    data = await state.get_data()
+    await state.clear()
+    await state.set_state(MainGroup.abonement_mode)
+    abonement_id = data.get("abonement_id")
+    abonement_key = data.get("abonement_key")
+    operation = data.get("operation")
+    if message.text and message.text.strip().lower() == "да" and abonement_id:
+        result = await db.abonement_delete(abonement_id=abonement_id, user_id=user_id)
+        await message.answer(
+            **as_list(
+                Text(
+                    "Абонемент",
+                    Bold(" не") if not result else "",
+                    " удален" if operation == "delete" else " отключен",
+                ),
+                "",
+                as_key_value(
+                    "Ключ",
+                    Code(abonement_key) if abonement_key else Italic("неизвестен"),
+                ),
+                "",
+                "Вы в меню работы с абонементами.",
+                "/cancel - выйти в главное меню",
+            ).as_kwargs(),
+            reply_markup=kb.get_abonement_kb(),
+        )
+    else:
+        await message.answer(
+            **as_list(
+                "Абонемент не удален.",
+                "",
+                "Вы в меню работы с абонементами.",
+                "/cancel - выйти в главное меню",
+            ).as_kwargs(),
+            reply_markup=kb.get_abonement_kb(),
+        )
 
 
 # Unknown command for Abonement

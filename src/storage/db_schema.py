@@ -112,6 +112,7 @@ class TgAbonement(Base):
     name: Mapped[str]
     total_passes: Mapped[int]
     description: Mapped[Optional[str]]
+    hidden: Mapped[Optional[bool]]
     create_ts: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,
         nullable=False,
@@ -130,7 +131,6 @@ class TgAbonement(Base):
 class TgAbonementUser(Base):
     __tablename__ = "tg_abonement_users"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, unique=True)
-    permission: Mapped[str]
     user: Mapped[TgUser] = relationship("TgUser", back_populates="abonement_uses")
     user_id: Mapped[int] = mapped_column(ForeignKey("tg_users.id"))
     abonement: Mapped[TgAbonement] = relationship("TgAbonement", back_populates="users")
