@@ -152,6 +152,24 @@ class Database:
         await self.session.commit()
         return abonement
 
+    # Abonement edit
+    async def abonement_edit(
+        self,
+        abonement_id: int,
+        name: str,
+        owner: TgUser,
+        total_passes: int = 0,
+        description: Optional[str] = None,
+    ) -> Optional[TgAbonement]:
+        abonement = await self.abonement_by_id(abonement_id)
+        if not abonement or abonement.owner_id != owner.id:
+            return None
+        abonement.name = name
+        abonement.total_passes = total_passes
+        abonement.description = description
+        await self.session.commit()
+        return abonement
+
     # Abonement by token
     async def abonement_by_token(self, token: str) -> Optional[TgAbonement]:
         stmt = select(TgAbonement).where(TgAbonement.token == token)

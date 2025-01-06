@@ -91,7 +91,9 @@ def get_abonement_list_kb(
 
 
 # ABONEMENT CONTROL MENU
-def get_abonement_control_kb(abonement: TgAbonement) -> Optional[InlineKeyboardMarkup]:
+def get_abonement_control_kb(
+    abonement: TgAbonement, user_id: int
+) -> Optional[InlineKeyboardMarkup]:
     if not abonement:
         return None
     builder = InlineKeyboardBuilder()
@@ -104,7 +106,7 @@ def get_abonement_control_kb(abonement: TgAbonement) -> Optional[InlineKeyboardM
         ),
     )
     builder.button(
-        text="История посещений",
+        text="История",
         callback_data=AbonementCallbackFactory(
             id=abonement.id, token=abonement.token, action="history"
         ),
@@ -115,25 +117,33 @@ def get_abonement_control_kb(abonement: TgAbonement) -> Optional[InlineKeyboardM
             id=abonement.id, token=abonement.token, action="share"
         ),
     )
-    builder.button(
-        text="Изменить",
-        callback_data=AbonementCallbackFactory(
-            id=abonement.id, token=abonement.token, action="edit"
-        ),
-    )
-    builder.button(
-        text="Удалить",
-        callback_data=AbonementCallbackFactory(
-            id=abonement.id, token=abonement.token, action="delete"
-        ),
-    )
+    if abonement.owner_id == user_id:
+        builder.button(
+            text="Изменить",
+            callback_data=AbonementCallbackFactory(
+                id=abonement.id, token=abonement.token, action="edit"
+            ),
+        )
+        builder.button(
+            text="Удалить",
+            callback_data=AbonementCallbackFactory(
+                id=abonement.id, token=abonement.token, action="delete"
+            ),
+        )
+    else:
+        builder.button(
+            text="Отвязать",
+            callback_data=AbonementCallbackFactory(
+                id=abonement.id, token=abonement.token, action="delete"
+            ),
+        )
     builder.button(
         text="Выход",
         callback_data=AbonementCallbackFactory(
             id=abonement.id, token=abonement.token, action="exit"
         ),
     )
-    builder.adjust(*[1, 1, 3, 1], repeat=False)
+    builder.adjust(*[2, 3, 1], repeat=False)
     return builder.as_markup()
 
 

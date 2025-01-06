@@ -90,7 +90,7 @@ async def callbacks_abonement_open(
                 ),
                 "Выберите действие",
             ).as_kwargs(),
-            reply_markup=kb.get_abonement_control_kb(abonement),
+            reply_markup=kb.get_abonement_control_kb(abonement, user.id),
         )
 
 
@@ -301,6 +301,65 @@ async def callbacks_abonement_visits(
             )
 
 
+# Edit Abonement
+@router.callback_query(
+    StateFilter(AbonementGroup.abonement_open),
+    AbonementCallbackFactory.filter(F.action == "edit"),
+)
+async def callbacks_abonement_edit(
+    callback: CallbackQuery,
+    callback_data: AbonementCallbackFactory,
+    state: FSMContext,
+    db: Database,
+):
+    await callback.answer()
+    abonement = await db.abonement_by_id(callback_data.id)
+    user = await db.user_by_tg_id(callback.from_user.id)
+    if (
+        not abonement
+        or abonement.token != callback_data.token
+        or not user
+        or user.id != abonement.owner_id
+    ):
+        if callback.message and type(callback.message) == Message:
+            await callback.message.answer(
+                f"Неверный ключ абонемента. Введите /cancel для выхода.",
+            )
+        return
+    if callback.message and type(callback.message) == Message:
+        await callback.message.edit_reply_markup(None)
+        await state.set_data({"abonement_id": abonement.id})
+        await state.set_state(AbonementGroup.abonement_name)
+        await callback.message.answer(
+            **Text(
+                as_list(
+                    "Редактирование абонемента",
+                    as_key_value("Текущее название", abonement.name),
+                    as_key_value(
+                        "Текущее описание",
+                        (
+                            abonement.description
+                            if abonement.description
+                            else Italic("отсутствует")
+                        ),
+                    ),
+                    as_key_value(
+                        "Текущее количество проходов",
+                        (
+                            abonement.total_passes
+                            if abonement.total_passes
+                            else Italic("без ограничения посещений")
+                        ),
+                    ),
+                    "",
+                    Bold("Введите новое название"),
+                    "/cancel - отменить редактирование абонемента",
+                )
+            ).as_kwargs(),
+            reply_markup=kb.no_keyboard,
+        )
+
+
 #
 # HANDLE MESSAGES
 #
@@ -498,7 +557,7 @@ async def process_good_name_abonement_command(
             "Введите 0, если не нужно проверять количество посещений",
             "",
             "Всю остальную информацию введём на следующих шагах.",
-            "/cancel - отменить создание абонемента",
+            "/cancel - отменить операцию с абонементом",
         ).as_kwargs(),
     )
 
@@ -512,7 +571,7 @@ async def process_wrong_name_abonement_command(message: Message) -> None:
             "Имя не подходит. Нужен просто текст.",
             "",
             "Попробуйте другое имя, без спецсимволов.",
-            "/cancel - отменить создание абонемента",
+            "/cancel - отменить операцию с абонементом",
         ).as_kwargs()
     )
 
@@ -545,7 +604,7 @@ async def process_good_passes_abonement_command(
             "Всё, что нужо знать тем, кто пользуется абонементом.",
             "",
             "/skip - не заполнять описание абонемента",
-            "/cancel - отменить создание абонемента",
+            "/cancel - отменить операцию с абонементом",
         ).as_kwargs()
     )
 
@@ -559,7 +618,7 @@ async def process_wrong_passes_abonement_command(message: Message) -> None:
             "Количество посещений не подходит.",
             "",
             "Попробуйте отправить положительное число или 0.",
-            "/cancel - отменить создание абонемента",
+            "/cancel - отменить операцию с абонементом",
         ).as_kwargs()
     )
 
@@ -567,7 +626,7 @@ async def process_wrong_passes_abonement_command(message: Message) -> None:
 # Add new Abonement: GOOD ABONEMENT DESCRIPTION
 @router.message(
     StateFilter(AbonementGroup.abonement_description),
-    or_f(Command(commands=["skip"]), F.text),
+    or_f(Command("skip"), F.text),
 )
 async def process_good_description_abonement_command(
     message: Message, state: FSMContext, user_id: int, db: Database
@@ -582,38 +641,85 @@ async def process_good_description_abonement_command(
     abonement_name = (await state.get_data()).get("name")
     total_passes = (await state.get_data()).get("total_passes")
     description = (await state.get_data()).get("description")
-    if not user or not abonement_name or not total_passes or not description:
+    abonement_id = (await state.get_data()).get("abonement_id")
+    if not user or not abonement_name or total_passes is None:
         logger.warning(f"FSM: abonement: user {user_id} not found or wrong state")
         return
-    abonement = await db.abonement_create(
-        name=abonement_name,
-        owner=user,
-        total_passes=total_passes,
-        description=description,
-    )
-    logger.info(f"Created new abonement {abonement.id}")
+    if abonement_id:
+        abonement = await db.abonement_edit(
+            abonement_id=abonement_id,
+            name=abonement_name,
+            owner=user,
+            total_passes=total_passes,
+            description=description,
+        )
+        if abonement:
+            logger.info(f"Updated abonement {abonement.id}")
+        else:
+            logger.warning(
+                f"FSM: abonement: can't update abonement {abonement_id} for user {user_id}"
+            )
+    else:
+        abonement = await db.abonement_create(
+            name=abonement_name,
+            owner=user,
+            total_passes=total_passes,
+            description=description,
+        )
+        if abonement:
+            logger.info(f"Created new abonement {abonement.id}")
+        else:
+            logger.warning(f"FSM: abonement: can't create new abonement")
     # Reset state to Abonenment mode
     await state.clear()
     await state.set_state(MainGroup.abonement_mode)
+    if not abonement:
+        return
+    # Show info about abonement
     key = abonement.token
-    await message.answer(
-        **as_list(
-            "Абонемент создан:",
-            Bold(abonement.name),
-            "",
-            "Ключ",
-            Code(key),
-            "",
-            "Ссылка для подключения:",
-            (
-                await create_start_link(bot=message.bot, payload=f"abonement_{key}")
-                if message.bot
-                else Bold("недоступна")
-            ),
-            "",
-            "Если хотите поделиться абонементом, перешлите это сообщение другому пользователю.",
-        ).as_kwargs()
-    )
+    if abonement_id:
+        await message.answer(
+            **as_list(
+                "Абонемент изменён",
+                as_key_value("Новое название", abonement.name),
+                as_key_value(
+                    "Новое описание",
+                    (
+                        abonement.description
+                        if abonement.description
+                        else Italic("отсутствует")
+                    ),
+                ),
+                as_key_value(
+                    "Всего посещений",
+                    (
+                        abonement.total_passes
+                        if abonement.total_passes
+                        else Italic("без ограничения")
+                    ),
+                ),
+                as_key_value("Ключ", Code(key)),
+            ).as_kwargs()
+        )
+    else:
+        await message.answer(
+            **as_list(
+                "Абонемент создан:",
+                Bold(abonement.name),
+                "",
+                "Ключ",
+                Code(key),
+                "",
+                "Ссылка для подключения:",
+                (
+                    await create_start_link(bot=message.bot, payload=f"abonement_{key}")
+                    if message.bot
+                    else Bold("недоступна")
+                ),
+                "",
+                "Если хотите поделиться абонементом, перешлите это сообщение другому пользователю.",
+            ).as_kwargs()
+        )
     await message.answer(
         **as_list(
             "Вы в меню работы с абонементами.",
