@@ -5,6 +5,7 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from aiogram.filters.callback_data import CallbackData
 from storage.db_schema import TgAbonement
 from utils.config import tables
+from const.text import cmd
 
 
 # Abonement Callback factory
@@ -16,8 +17,8 @@ class AbonementCallbackFactory(CallbackData, prefix="abonement"):
 
 # MAIN MENU
 def get_main_kb(user_type: list[str] = ["unknown"]) -> ReplyKeyboardMarkup:
-    buttons_name_reg = ["Диагностика", "Генератор таблиц", "Абонементы"]
-    buttons_name_unreg = ["Регистрация"] + buttons_name_reg
+    buttons_name_reg = [cmd["diag"], cmd["tables"], cmd["abonements"]]
+    buttons_name_unreg = [cmd["register"]] + buttons_name_reg
     if "registered" in user_type:
         buttons_name = buttons_name_reg
     else:
@@ -38,8 +39,8 @@ def get_generator_kb() -> ReplyKeyboardMarkup:
     buttons: list[KeyboardButton] = []
     for table in tables:
         buttons.append(KeyboardButton(text=table["title"]))
-    buttons.append(KeyboardButton(text="Все"))
-    buttons.append(KeyboardButton(text="Выход"))
+    buttons.append(KeyboardButton(text=cmd["all"]))
+    buttons.append(KeyboardButton(text=cmd["exit"]))
     kb_builder = ReplyKeyboardBuilder()
     kb_builder.row(*buttons, width=2)
     kb_markup: ReplyKeyboardMarkup = kb_builder.as_markup(
@@ -51,10 +52,10 @@ def get_generator_kb() -> ReplyKeyboardMarkup:
 # ABONEMENT MENU
 def get_abonement_kb() -> ReplyKeyboardMarkup:
     buttons: list[KeyboardButton] = []
-    buttons.append(KeyboardButton(text="Мои абонементы"))
-    buttons.append(KeyboardButton(text="Создать новый абонемент"))
-    buttons.append(KeyboardButton(text="Присоединиться к абонементу"))
-    buttons.append(KeyboardButton(text="Выход"))
+    buttons.append(KeyboardButton(text=cmd["my_abonements"]))
+    buttons.append(KeyboardButton(text=cmd["new_abonement"]))
+    buttons.append(KeyboardButton(text=cmd["join_abonement"]))
+    buttons.append(KeyboardButton(text=cmd["exit"]))
     kb_builder = ReplyKeyboardBuilder()
     kb_builder.row(*buttons, width=2)
     kb_markup: ReplyKeyboardMarkup = kb_builder.as_markup(
@@ -96,47 +97,45 @@ def get_abonement_control_kb(
         return None
     builder = InlineKeyboardBuilder()
     builder.button(
-        text=(
-            "Записать посещение" if abonement.total_passes == 0 else "Списать посещение"
-        ),
+        text=(cmd["plus_visit"] if abonement.total_visits == 0 else cmd["minus_visit"]),
         callback_data=AbonementCallbackFactory(
-            id=abonement.id, token=abonement.token, action="pass"
+            id=abonement.id, token=abonement.token, action="visit"
         ),
     )
     builder.button(
-        text="История",
+        text=cmd["visits_history"],
         callback_data=AbonementCallbackFactory(
             id=abonement.id, token=abonement.token, action="history"
         ),
     )
     builder.button(
-        text="Поделиться",
+        text=cmd["share"],
         callback_data=AbonementCallbackFactory(
             id=abonement.id, token=abonement.token, action="share"
         ),
     )
     if abonement.owner_id == user_id:
         builder.button(
-            text="Изменить",
+            text=cmd["edit"],
             callback_data=AbonementCallbackFactory(
                 id=abonement.id, token=abonement.token, action="edit"
             ),
         )
         builder.button(
-            text="Удалить",
+            text=cmd["delete"],
             callback_data=AbonementCallbackFactory(
                 id=abonement.id, token=abonement.token, action="delete"
             ),
         )
     else:
         builder.button(
-            text="Отвязать",
+            text=cmd["unlink"],
             callback_data=AbonementCallbackFactory(
                 id=abonement.id, token=abonement.token, action="delete"
             ),
         )
     builder.button(
-        text="Выход",
+        text=cmd["exit"],
         callback_data=AbonementCallbackFactory(
             id=abonement.id, token=abonement.token, action="exit"
         ),
@@ -153,27 +152,27 @@ def get_abonement_history_kb(
         return None
     builder = InlineKeyboardBuilder()
     builder.button(
-        text="Назад",
+        text=cmd["back"],
         callback_data=AbonementCallbackFactory(
             id=abonement.id, token=abonement.token, action="open"
         ),
     )
     if offset > 0:
         builder.button(
-            text="⬅️",
+            text=cmd["prev"],
             callback_data=AbonementCallbackFactory(
                 id=abonement.id, token=abonement.token, action="prev"
             ),
         )
     if offset + limit < total:
         builder.button(
-            text="➡️",
+            text=cmd["next"],
             callback_data=AbonementCallbackFactory(
                 id=abonement.id, token=abonement.token, action="next"
             ),
         )
     builder.button(
-        text="Выход",
+        text=cmd["exit"],
         callback_data=AbonementCallbackFactory(
             id=abonement.id, token=abonement.token, action="exit"
         ),
@@ -184,24 +183,26 @@ def get_abonement_history_kb(
 
 # GO TO MAIN KEYBOARD
 go_home_kb = ReplyKeyboardMarkup(
-    keyboard=[[KeyboardButton(text="Главное меню")]], resize_keyboard=True
+    keyboard=[[KeyboardButton(text=cmd["go_home"])]], resize_keyboard=True
 )
 
 # YES-NO KEYBOARD
 yes_no_keyboard = ReplyKeyboardMarkup(
-    keyboard=[[KeyboardButton(text="Да"), KeyboardButton(text="Нет")]],
+    keyboard=[[KeyboardButton(text=cmd["yes"]), KeyboardButton(text=cmd["no"])]],
     resize_keyboard=True,
 )
 
 # AGREEMENT KEYBOARD
 agreement_keyboard = ReplyKeyboardMarkup(
-    keyboard=[[KeyboardButton(text="✅ Согласен"), KeyboardButton(text="Выход")]],
+    keyboard=[
+        [KeyboardButton(text=cmd["agree"]), KeyboardButton(text=cmd["disagree"])]
+    ],
     resize_keyboard=True,
 )
 
 # GET CONTACT KEYBOARD
 get_contact_keyboard = ReplyKeyboardMarkup(
-    keyboard=[[KeyboardButton(text="☎ Поделиться", request_contact=True)]],
+    keyboard=[[KeyboardButton(text=cmd["share_phone"], request_contact=True)]],
     one_time_keyboard=True,
     resize_keyboard=True,
 )

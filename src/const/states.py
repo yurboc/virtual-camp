@@ -18,10 +18,10 @@ class RegisterGroup(StatesGroup):
 
 # FSM Abonement group
 class AbonementGroup(StatesGroup):
-    abonement_name = State()
-    abonement_total_passes = State()
-    abonement_description = State()
-    abonement_join = State()
-    abonement_accept = State()
-    abonement_open = State()
-    abonement_delete = State()
+    name = State()
+    total_visits = State()
+    description = State()
+    join = State()
+    accept = State()
+    open = State()
+    delete = State()

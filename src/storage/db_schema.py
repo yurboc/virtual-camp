@@ -66,8 +66,8 @@ class TgUser(Base):
     abonement_uses: Mapped[List["TgAbonementUser"]] = relationship(
         "TgAbonementUser", back_populates="user"
     )
-    abonement_passes: Mapped[List["TgAbonementPass"]] = relationship(
-        "TgAbonementPass", back_populates="user"
+    abonement_visits: Mapped[List["TgAbonementVisit"]] = relationship(
+        "TgAbonementVisit", back_populates="user"
     )
 
     def __repr__(self) -> str:
@@ -110,7 +110,7 @@ class TgAbonement(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, unique=True)
     token: Mapped[str] = mapped_column(String(60), index=True, unique=True)
     name: Mapped[str]
-    total_passes: Mapped[int]
+    total_visits: Mapped[int]
     description: Mapped[Optional[str]]
     hidden: Mapped[Optional[bool]]
     create_ts: Mapped[datetime.datetime] = mapped_column(
@@ -123,8 +123,8 @@ class TgAbonement(Base):
     users: Mapped[List["TgAbonementUser"]] = relationship(
         "TgAbonementUser", back_populates="abonement"
     )
-    passes: Mapped[List["TgAbonementPass"]] = relationship(
-        "TgAbonementPass", back_populates="abonement"
+    visits: Mapped[List["TgAbonementVisit"]] = relationship(
+        "TgAbonementVisit", back_populates="abonement"
     )
 
 
@@ -137,17 +137,17 @@ class TgAbonementUser(Base):
     abonement_id: Mapped[int] = mapped_column(ForeignKey("tg_abonements.id"))
 
 
-class TgAbonementPass(Base):
-    __tablename__ = "tg_abonement_passes"
+class TgAbonementVisit(Base):
+    __tablename__ = "tg_abonement_visits"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, unique=True)
     ts: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,
         nullable=False,
         server_default=func.CURRENT_TIMESTAMP(),
     )
-    user: Mapped[TgUser] = relationship("TgUser", back_populates="abonement_passes")
+    user: Mapped[TgUser] = relationship("TgUser", back_populates="abonement_visits")
     user_id: Mapped[int] = mapped_column(ForeignKey("tg_users.id"))
     abonement: Mapped[TgAbonement] = relationship(
-        "TgAbonement", back_populates="passes"
+        "TgAbonement", back_populates="visits"
     )
     abonement_id: Mapped[int] = mapped_column(ForeignKey("tg_abonements.id"))

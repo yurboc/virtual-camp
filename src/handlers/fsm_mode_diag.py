@@ -6,9 +6,17 @@ from aiogram.filters import Command, StateFilter
 from aiogram.filters import or_f
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
-from aiogram.utils.formatting import Text, Pre, as_list, as_marked_list, as_key_value
-from handlers.fsm_define import MainGroup
+from aiogram.utils.formatting import (
+    Text,
+    Bold,
+    Pre,
+    as_list,
+    as_marked_list,
+    as_key_value,
+)
+from const.states import MainGroup
 from storage.db_api import Database
+from const.text import cmd, msg, help
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)
@@ -16,16 +24,12 @@ router = Router(name=__name__)
 
 # Entering diagnostic mode
 @router.message(
-    StateFilter(default_state),
-    or_f(Command("diag"), F.text == "Диагностика"),
+    StateFilter(default_state), or_f(Command("diag"), F.text == cmd["diag"])
 )
 async def process_diag_command(message: Message, state: FSMContext) -> None:
     logger.info(f"FSM: diag: entering diag mode")
     await state.set_state(MainGroup.diag_mode)
-    await message.answer(
-        text="Диагностика. Выход - /cancel",
-        reply_markup=kb.no_keyboard,
-    )
+    await message.answer(text=msg["diag_main"], reply_markup=kb.no_keyboard)
 
 
 # Command /help in diag state
@@ -33,13 +37,7 @@ async def process_diag_command(message: Message, state: FSMContext) -> None:
 async def process_help_command(message: Message):
     logger.info(f"FSM: diag: help command")
     await message.answer(
-        **Text(
-            as_list(
-                "Режим диагностики:",
-                "/cancel - завершить диагностику",
-                "/info - информация о пользователе",
-            )
-        ).as_kwargs(),
+        **Text(as_list(Bold(help["diag_cmd"]), help["diag_info"])).as_kwargs()
     )
 
 
@@ -51,7 +49,7 @@ async def process_cancel_command(
     logger.info(f"FSM: diag: cancel command, user_type={user_type}")
     await state.clear()
     await message.answer(
-        text="Завершение диагностики. Вы в главном меню.",
+        text=msg["diag_cancel"],
         reply_markup=kb.get_main_kb(user_type),
     )
 
@@ -63,8 +61,8 @@ async def process_info_command(
 ) -> None:
     logger.info(f"FSM: diag: info command, user_id={user_id}, user_type={user_type}")
     user = await db.user_by_id(user_id)
-    content = Text(
-        f"Пользователь. Выход - /cancel\n",
+    content = as_list(
+        msg["diag_info"],
         as_marked_list(
             as_key_value("user_id", user_id),
             as_key_value("user_tg_id", user_tg_id),
@@ -83,7 +81,7 @@ async def process_info_command(
 async def process_any_message(message: Message) -> None:
     logger.info(f"FSM: diag: any message")
     content = Text(
-        "Расшифровка. Выход - /cancel",
+        msg["diag_any_msg"],
         Pre(message.model_dump_json(indent=4, exclude_none=True), language="JSON"),
     )
     await message.answer(

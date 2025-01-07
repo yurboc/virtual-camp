@@ -3,6 +3,7 @@ import logging
 import logging.handlers
 from aiogram import Bot
 from storage.db_api import Database
+from utils.config import tables
 
 logger = logging.getLogger(__name__)
 
@@ -26,18 +27,19 @@ class MessageSender:
             return
 
         # Prepare text
-        self.msg_text = "Получен результат генерации:\n\n"
+        self.msg_text = "Получен результат генерации таблицы\n\n"
         if self.msg.get("task_id"):
             self.task_id = int(self.msg["task_id"])
-            self.msg_text += f"ID задания: {self.msg['task_id']}\n"
-        if self.msg.get("uuid"):
-            self.msg_text += f"UUID: {self.msg['uuid']}\n"
+            self.msg_text += f"ID: {self.msg['task_id']}\n"
         if self.msg.get("table"):
-            self.msg_text += f"Таблица: {self.msg['table']}\n"
-        if self.msg.get("job"):
-            self.msg_text += f"Задание: {self.msg['job']}\n"
+            table_name = self.msg["table"]
+            for table in tables:
+                if table["generator_name"] == table_name:
+                    table_name = table["title"]
+                    break
+            self.msg_text += f"Таблица: {table_name}\n"
         if self.msg.get("result"):
-            self.msg_text += f"Результат: {self.msg['result']}\n"
+            self.msg_text += f"Результат: {'Успешно' if self.msg['result'] == 'done' else 'Ошибка'}\n"
         logger.info("Done RabbitMQ message converting!")
 
     # Store notification to DB and send to Telegram

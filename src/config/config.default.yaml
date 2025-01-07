@@ -39,6 +39,9 @@ development:
     WEBHOOK_SECRET: your-secret
     BASE_WEBHOOK_URL: https://your-domain.ru
     ADMIN: your-admin-telegram-id
+    ABONEMENTS:
+      VISIT_COUNT_LIMIT: 1000
+      PAGINATION_LIMIT: 10
 
   DB:
     TYPE: postgresql+asyncpg # async: postgresql+asyncpg, sync: postgresql+psycopg2

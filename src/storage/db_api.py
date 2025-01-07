@@ -3,7 +3,7 @@ import uuid
 from typing import Optional, Sequence, Union
 from aiogram.types import TelegramObject, User, Message
 from storage.db_schema import TgUpdate, TgMessage, TgUser, TgNotification, TgTask
-from storage.db_schema import TgAbonement, TgAbonementUser, TgAbonementPass
+from storage.db_schema import TgAbonement, TgAbonementUser, TgAbonementVisit
 from sqlalchemy import select, or_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.expression import func
@@ -156,14 +156,14 @@ class Database:
         self,
         name: str,
         owner: TgUser,
-        total_passes: int = 0,
+        total_visits: int = 0,
         description: Optional[str] = None,
     ) -> TgAbonement:
         abonement_uuid = str(uuid.uuid4())
         abonement = TgAbonement(
             name=name,
             token=abonement_uuid,
-            total_passes=total_passes,
+            total_visits=total_visits,
             description=description,
             owner=owner,
         )
@@ -177,14 +177,14 @@ class Database:
         abonement_id: int,
         name: str,
         owner: TgUser,
-        total_passes: int = 0,
+        total_visits: int = 0,
         description: Optional[str] = None,
     ) -> Optional[TgAbonement]:
         abonement = await self.abonement_by_id(abonement_id)
         if not abonement or abonement.owner_id != owner.id:
             return None
         abonement.name = name
-        abonement.total_passes = total_passes
+        abonement.total_visits = total_visits
         abonement.description = description
         await self.session.commit()
         return abonement
@@ -247,66 +247,68 @@ class Database:
         abonement_user = result.scalars().first()
         return abonement_user
 
-    # Abonement pass count
-    async def abonement_pass_count(
+    # Abonement visit count
+    async def abonement_visits_count(
         self, abonement_id: int, user_id: Optional[int] = None
     ) -> int:
         if not user_id:
             stmt = (
                 func.count()
                 .select()
-                .where(TgAbonementPass.abonement_id == abonement_id)
+                .where(TgAbonementVisit.abonement_id == abonement_id)
             )
         else:
             stmt = (
                 func.count()
                 .select()
                 .where(
-                    TgAbonementPass.abonement_id == abonement_id,
-                    TgAbonementPass.user_id == user_id,
+                    TgAbonementVisit.abonement_id == abonement_id,
+                    TgAbonementVisit.user_id == user_id,
                 )
             )
         result = await self.session.execute(stmt)
-        abonement_passes = result.scalar() or 0
-        return abonement_passes
+        abonement_visits = result.scalar() or 0
+        return abonement_visits
 
-    # Abonement pass list
-    async def abonement_pass_list(
+    # Abonement visit list
+    async def abonement_visits_list(
         self, abonement_id: int, limit: int, offset: int
-    ) -> Sequence[TgAbonementPass]:
+    ) -> Sequence[TgAbonementVisit]:
         stmt = (
-            select(TgAbonementPass)
-            .options(joinedload(TgAbonementPass.user))
-            .where(TgAbonementPass.abonement_id == abonement_id)
-            .order_by(TgAbonementPass.id.desc())
+            select(TgAbonementVisit)
+            .options(joinedload(TgAbonementVisit.user))
+            .where(TgAbonementVisit.abonement_id == abonement_id)
+            .order_by(TgAbonementVisit.id.desc())
             .limit(limit)
             .offset(offset)
         )
         result = await self.session.execute(stmt)
-        abonement_passes = result.scalars().all()
-        return abonement_passes
+        abonement_visits = result.scalars().all()
+        return abonement_visits
 
-    # Abonement pass left
-    async def abonement_pass_left(self, abonement: TgAbonement) -> Optional[int]:
-        total_passes = abonement.total_passes
-        if not total_passes:
+    # Abonement visits left
+    async def abonement_visits_left(self, abonement: TgAbonement) -> Optional[int]:
+        total_visits = abonement.total_visits
+        if not total_visits:
             return None
-        stmt = func.count().select().where(TgAbonementPass.abonement_id == abonement.id)
+        stmt = (
+            func.count().select().where(TgAbonementVisit.abonement_id == abonement.id)
+        )
         result = await self.session.execute(stmt)
-        passes_count = result.scalar() or 0
-        return total_passes - passes_count
+        visits_count = result.scalar() or 0
+        return total_visits - visits_count
 
-    # Abonement pass add
-    async def abonement_pass_add(
+    # Abonement visit add
+    async def abonement_visit_add(
         self, abonement_id: int, user_id: int
-    ) -> Optional[TgAbonementPass]:
+    ) -> Optional[TgAbonementVisit]:
         abonement = await self.abonement_by_id(abonement_id)
         if not abonement or abonement.hidden:
             return None
-        pass_left = await self.abonement_pass_left(abonement)
-        if pass_left is not None and pass_left <= 0:
+        visits_left = await self.abonement_visits_left(abonement)
+        if visits_left is not None and visits_left <= 0:
             return None
-        abonement_pass = TgAbonementPass(abonement_id=abonement_id, user_id=user_id)
-        self.session.add(abonement_pass)
+        abonement_visit = TgAbonementVisit(abonement_id=abonement_id, user_id=user_id)
+        self.session.add(abonement_visit)
         await self.session.commit()
-        return abonement_pass
+        return abonement_visit

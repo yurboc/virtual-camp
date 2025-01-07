@@ -13,12 +13,13 @@ from middleware.outer import DatabaseMiddleware, StoreAllUpdates, CheckUserType
 from middleware.inner import StoreAllMessages
 from handlers import (
     deep_link_handlers,
-    main_menu_handlers,
+    fsm_main_handlers,
     other_handlers,
     fsm_mode_diag,
     fsm_mode_register,
     fsm_mode_generator,
     fsm_mode_abonement,
+    fsm_mode_abonement_cb,
 )
 from storage import db_schema
 from utils.config import config
@@ -70,13 +71,14 @@ async def async_main() -> None:
     dp = Dispatcher(storage=storage, engine=async_engine)
 
     # Add routers
-    dp.include_router(fsm_mode_diag.router)
-    dp.include_router(deep_link_handlers.router)
-    dp.include_router(fsm_mode_register.router)
-    dp.include_router(fsm_mode_generator.router)
-    dp.include_router(fsm_mode_abonement.router)
-    dp.include_router(main_menu_handlers.router)
-    dp.include_router(other_handlers.router)
+    dp.include_router(fsm_mode_diag.router)  # Diag mode (always first)
+    dp.include_router(deep_link_handlers.router)  # Deep links (always second)
+    dp.include_router(fsm_mode_register.router)  # Register user
+    dp.include_router(fsm_mode_generator.router)  # FST-OTM tables generator
+    dp.include_router(fsm_mode_abonement_cb.router)  # Abonement: handle callbacks
+    dp.include_router(fsm_mode_abonement.router)  # Abonement: handle messages
+    dp.include_router(fsm_main_handlers.router)  # Main menu (always pre-last)
+    dp.include_router(other_handlers.router)  # All other messages (always last)
 
     # Add middleware
     dp.update.outer_middleware(DatabaseMiddleware(session=async_session))
