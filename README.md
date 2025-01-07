@@ -1,5 +1,8 @@
 # Программный комплекс Virtual Camp
 
+![https://github.com/yurboc/virtual-camp/actions/workflows/black.yml](https://github.com/yurboc/virtual-camp/actions/workflows/black.yml/badge.svg?branch=main)
+![https://github.com/yurboc/virtual-camp/actions/workflows/flake8.yml](https://github.com/yurboc/virtual-camp/actions/workflows/flake8.yml/badge.svg?branch=main)
+
 Содержимое репозитория:
 
 * Исходый код Telegram-бота VirtualCampBot <https://t.me/VirtualCampBot>
