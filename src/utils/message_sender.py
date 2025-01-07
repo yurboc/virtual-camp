@@ -2,6 +2,7 @@ import json
 import logging
 import logging.handlers
 from aiogram import Bot
+from aiogram.types import FSInputFile
 from storage.db_api import Database
 from utils.config import tables
 
@@ -13,6 +14,15 @@ class MessageSender:
         self.admin_id = admin_id
         self.AsyncSessionLocal = session_maker
         self.bot = Bot(token=token)
+
+    # Send picture
+    async def sendPicture(self, picture_file: str) -> bool:
+        file = FSInputFile(picture_file)
+        res = await self.bot.send_photo(self.admin_id, photo=file)
+        return res is not None
+
+    async def close(self):
+        await self.bot.session.close()
 
     # Convert RabbitMQ message
     def convert_rabbitmq_message(self, body):

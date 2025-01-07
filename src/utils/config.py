@@ -3,6 +3,7 @@ import yaml
 
 MAIN_CONFIG = os.path.join("config", "config.yaml")
 TABLES_CONFIG = os.path.join("config", "tables.yaml")
+PICTURES_CONFIG = os.path.join("config", "pictures.yaml")
 
 
 class Config:
@@ -18,3 +19,4 @@ class Config:
 
 config = Config(config_file=MAIN_CONFIG, env=os.getenv("APP_ENV", "development")).config
 tables = Config(config_file=TABLES_CONFIG).config
+pictures = Config(config_file=PICTURES_CONFIG).config

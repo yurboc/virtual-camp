@@ -28,8 +28,7 @@ router = Router(name=__name__)
 
 # Entering Abonement mode
 @router.message(
-    StateFilter(default_state),
-    or_f(Command("abonement"), F.text == cmd["abonements"]),
+    StateFilter(default_state), or_f(Command("abonement"), F.text == cmd["abonements"])
 )
 async def process_abonement_command(message: Message, state: FSMContext) -> None:
     logger.info("FSM: abonement: entering abonement mode")
@@ -70,8 +69,7 @@ async def process_abonement_cancel_command(
 
 # Cancel command for Abonement Control mode
 @router.message(
-    StateFilter(AbonementGroup),
-    (or_f(Command("cancel"), F.text == cmd["exit"])),
+    StateFilter(AbonementGroup), (or_f(Command("cancel"), F.text == cmd["exit"]))
 )
 async def process_abonement_op_cancel_command(
     message: Message, state: FSMContext
@@ -203,10 +201,7 @@ async def process_wrong_visits_abonement_command(message: Message) -> None:
 
 
 # Add or Edit Abonement: GOOD description
-@router.message(
-    StateFilter(AbonementGroup.description),
-    or_f(Command("skip"), F.text),
-)
+@router.message(StateFilter(AbonementGroup.description), or_f(Command("skip"), F.text))
 async def process_good_description_abonement_command(
     message: Message, state: FSMContext, user_id: int, db: Database
 ) -> None:
@@ -432,4 +427,5 @@ async def process_good_delete_abonement_command(
     or_f(StateFilter(MainGroup.abonement_mode), StateFilter(AbonementGroup))
 )
 async def process_abonement_unknown_command(message: Message) -> None:
+    logger.info("FSM: abonement: unknown command")
     await message.answer(msg["ab_unknown"])

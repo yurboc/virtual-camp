@@ -4,7 +4,7 @@ from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from aiogram.filters.callback_data import CallbackData
 from storage.db_schema import TgAbonement
-from utils.config import tables
+from utils.config import tables, pictures
 from const.text import cmd
 
 
@@ -17,7 +17,7 @@ class AbonementCallbackFactory(CallbackData, prefix="abonement"):
 
 # MAIN MENU
 def get_main_kb(user_type: list[str] = ["unknown"]) -> ReplyKeyboardMarkup:
-    buttons_name_reg = [cmd["diag"], cmd["tables"], cmd["abonements"]]
+    buttons_name_reg = [cmd["diag"], cmd["tables"], cmd["abonements"], cmd["pictures"]]
     buttons_name_unreg = [cmd["register"]] + buttons_name_reg
     if "registered" in user_type:
         buttons_name = buttons_name_reg
@@ -40,6 +40,20 @@ def get_generator_kb() -> ReplyKeyboardMarkup:
     for table in tables:
         buttons.append(KeyboardButton(text=table["title"]))
     buttons.append(KeyboardButton(text=cmd["all"]))
+    buttons.append(KeyboardButton(text=cmd["exit"]))
+    kb_builder = ReplyKeyboardBuilder()
+    kb_builder.row(*buttons, width=2)
+    kb_markup: ReplyKeyboardMarkup = kb_builder.as_markup(
+        one_time_keyboard=True, resize_keyboard=True
+    )
+    return kb_markup
+
+
+# PICTURES MENU
+def get_pictures_kb() -> ReplyKeyboardMarkup:
+    buttons: list[KeyboardButton] = []
+    for picture in pictures:
+        buttons.append(KeyboardButton(text=picture["title"]))
     buttons.append(KeyboardButton(text=cmd["exit"]))
     kb_builder = ReplyKeyboardBuilder()
     kb_builder.row(*buttons, width=2)

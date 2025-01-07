@@ -14,6 +14,7 @@ from middleware.inner import StoreAllMessages
 from handlers import (
     deep_link_handlers,
     fsm_main_handlers,
+    fsm_mode_pictures,
     other_handlers,
     fsm_mode_diag,
     fsm_mode_register,
@@ -75,12 +76,11 @@ async def async_main() -> None:
     dp.include_router(deep_link_handlers.router)  # Deep links (always second)
     dp.include_router(fsm_mode_register.router)  # Register user
     dp.include_router(fsm_mode_generator.router)  # FST-OTM tables generator
-    # Abonement: handle callbacks
-    dp.include_router(fsm_mode_abonement_cb.router)
-    dp.include_router(fsm_mode_abonement.router)  # Abonement: handle messages
+    dp.include_router(fsm_mode_pictures.router)  # Picture  generation mode
+    dp.include_router(fsm_mode_abonement_cb.router)  # Abonement: callbacks
+    dp.include_router(fsm_mode_abonement.router)  # Abonement: messages
     dp.include_router(fsm_main_handlers.router)  # Main menu (always pre-last)
-    # All other messages (always last)
-    dp.include_router(other_handlers.router)
+    dp.include_router(other_handlers.router)  # Other messages (always last)
 
     # Add middleware
     dp.update.outer_middleware(DatabaseMiddleware(session=async_session))
