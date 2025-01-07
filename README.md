@@ -1,7 +1,7 @@
 # Программный комплекс Virtual Camp
 
-![https://github.com/yurboc/virtual-camp/actions/workflows/black.yml](https://github.com/yurboc/virtual-camp/actions/workflows/black.yml/badge.svg?branch=main)
-![https://github.com/yurboc/virtual-camp/actions/workflows/flake8.yml](https://github.com/yurboc/virtual-camp/actions/workflows/flake8.yml/badge.svg?branch=main)
+[![Black Lint badge](https://github.com/yurboc/virtual-camp/actions/workflows/black.yml/badge.svg?branch=main)](https://github.com/yurboc/virtual-camp/actions/workflows/black.yml)
+[![flake8 Lint badge](https://github.com/yurboc/virtual-camp/actions/workflows/flake8.yml/badge.svg?branch=main)](https://github.com/yurboc/virtual-camp/actions/workflows/flake8.yml)
 
 Содержимое репозитория:
 
