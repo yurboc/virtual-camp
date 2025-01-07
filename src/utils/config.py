@@ -4,6 +4,7 @@ import yaml
 MAIN_CONFIG = os.path.join("config", "config.yaml")
 TABLES_CONFIG = os.path.join("config", "tables.yaml")
 
+
 class Config:
     def __init__(self, config_file, env=None):
         self.config_file = config_file
