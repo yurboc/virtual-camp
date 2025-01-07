@@ -128,6 +128,8 @@ msg: dict[str, str] = {
     # Picture generation messages
     "pictures_main": "Генерация обложек YouTube. Выберите фоновую картинку",
     "pictures_bad_task": "Задание неверное, выход по /cancel",
+    "pictures_text": "Напишите текст, который будет на обложке (1-2 строки)",
+    "pictures_bat_text": "Нужен просто текст (1 или 2 строки) или /cancel",
     "pictures_generating": "Генерация запущена, ждите...",
     "pictures_end": "Завершение генерации. Вы в главном меню",
     "pictures_unknown": "Неизвестная команда генерации, выход по /cancel",

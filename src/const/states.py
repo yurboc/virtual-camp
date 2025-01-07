@@ -9,6 +9,12 @@ class MainGroup(StatesGroup):
     abonement_mode = State()
 
 
+# FSM Pictures group
+class PicturesGroup(StatesGroup):
+    background = State()
+    text = State()
+
+
 # FSM Register group
 class RegisterGroup(StatesGroup):
     agreement = State()
