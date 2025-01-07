@@ -88,14 +88,18 @@ class Database:
     async def get_or_create_user(
         self, tg_user: Union[TelegramObject, User]
     ) -> Optional[TgUser]:
-        user = await self.user_by_tg_id(tg_user.id) if type(tg_user) == User else None
+        user = (
+            await self.user_by_tg_id(tg_user.id) if isinstance(tg_user, User) else None
+        )
         status = "unknown"
         if user:
             status = user.status
         else:
             status = "new_user"
             user = (
-                await self.user_add(tg_user=tg_user) if type(tg_user) == User else None
+                await self.user_add(tg_user=tg_user)
+                if isinstance(tg_user, User)
+                else None
             )
         logger.info(f"User status is {status}")
         return user
@@ -109,7 +113,6 @@ class Database:
 
     # Get task creator
     async def task_user(self, task_id: int) -> Optional[TgUser]:
-        # stmt = select(TgTask).options(joinedload(TgTask.user)).where(TgTask.id == task_id)
         stmt_task = select(TgTask).where(TgTask.id == task_id)
         result_task = await self.session.execute(stmt_task)
         task = result_task.scalars().first()
@@ -131,7 +134,10 @@ class Database:
     async def abonements_list_by_owner(self, user: TgUser) -> Sequence[TgAbonement]:
         stmt = select(TgAbonement).where(
             TgAbonement.owner_id == user.id,
-            or_(TgAbonement.hidden == None, TgAbonement.hidden != True),
+            or_(
+                TgAbonement.hidden == None,  # noqa: E711
+                TgAbonement.hidden != True,  # noqa: E712
+            ),
         )
         result = await self.session.execute(stmt)
         abonements = result.scalars().all()
@@ -144,7 +150,10 @@ class Database:
             .join(TgAbonementUser)
             .where(
                 TgAbonementUser.user_id == user.id,
-                or_(TgAbonement.hidden == None, TgAbonement.hidden != True),
+                or_(
+                    TgAbonement.hidden == None,  # noqa: E711
+                    TgAbonement.hidden != True,  # noqa: E712
+                ),
             )
         )
         result = await self.session.execute(stmt)

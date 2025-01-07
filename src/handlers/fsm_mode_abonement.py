@@ -32,7 +32,7 @@ router = Router(name=__name__)
     or_f(Command("abonement"), F.text == cmd["abonements"]),
 )
 async def process_abonement_command(message: Message, state: FSMContext) -> None:
-    logger.info(f"FSM: abonement: entering abonement mode")
+    logger.info("FSM: abonement: entering abonement mode")
     await state.set_state(MainGroup.abonement_mode)
     await message.answer(msg["abonement_main"], reply_markup=kb.get_abonement_kb())
 
@@ -40,14 +40,14 @@ async def process_abonement_command(message: Message, state: FSMContext) -> None
 # Help command for Abonement mode
 @router.message(StateFilter(MainGroup.abonement_mode), Command("help"))
 async def process_abonement_mode_help_command(message: Message) -> None:
-    logger.info(f"FSM: abonement mode: help command")
+    logger.info("FSM: abonement mode: help command")
     await message.answer(**as_list(Bold(help["ab_cmd"]), help["ab_cancel"]).as_kwargs())
 
 
 # Help command for Abonement Control mode
 @router.message(StateFilter(AbonementGroup), Command("help"))
 async def process_abonement_ctrl_help_command(message: Message) -> None:
-    logger.info(f"FSM: abonement control: help command")
+    logger.info("FSM: abonement control: help command")
     await message.answer(
         **as_list(help["ab_ctrl_cmd"], help["ab_ctrl_cancel"]).as_kwargs(),
     )
@@ -61,7 +61,7 @@ async def process_abonement_ctrl_help_command(message: Message) -> None:
 async def process_abonement_cancel_command(
     message: Message, state: FSMContext, user_type: list[str]
 ) -> None:
-    logger.info(f"FSM: abonement: cancel command")
+    logger.info("FSM: abonement: cancel command")
     await state.clear()
     await message.answer(
         text=msg["abonement_done"], reply_markup=kb.get_main_kb(user_type)
@@ -76,7 +76,7 @@ async def process_abonement_cancel_command(
 async def process_abonement_op_cancel_command(
     message: Message, state: FSMContext
 ) -> None:
-    logger.info(f"FSM: abonement: cancel operation command")
+    logger.info("FSM: abonement: cancel operation command")
     await state.clear()
     await state.set_state(MainGroup.abonement_mode)
     await message.answer(msg["ab_ctrl_done"], reply_markup=kb.get_abonement_kb())
@@ -89,7 +89,7 @@ async def process_abonement_op_cancel_command(
 async def process_my_abonements_command(
     message: Message, user_id: int, db: Database
 ) -> None:
-    logger.info(f"FSM: abonement: list my abonements")
+    logger.info("FSM: abonement: list my abonements")
     user = await db.user_by_id(user_id)
     if not user:
         logger.warning(f"FSM: abonement: user {user_id} not found")
@@ -130,7 +130,7 @@ async def process_my_abonements_command(
 #
 @router.message(StateFilter(MainGroup.abonement_mode), F.text == cmd["new_abonement"])
 async def process_add_abonement_command(message: Message, state: FSMContext) -> None:
-    logger.info(f"FSM: abonement: BEGIN new abonement")
+    logger.info("FSM: abonement: BEGIN new abonement")
     await state.set_state(AbonementGroup.name)
     # Ask Abonement name
     await message.answer(
@@ -148,7 +148,7 @@ async def process_add_abonement_command(message: Message, state: FSMContext) -> 
 async def process_good_name_abonement_command(
     message: Message, state: FSMContext
 ) -> None:
-    logger.info(f"FSM: abonement: GOOD NAME for abonement")
+    logger.info("FSM: abonement: GOOD NAME for abonement")
     # Check Abonement name
     name = message.text.strip() if message.text else None
     if not name or not name.isprintable():
@@ -166,7 +166,7 @@ async def process_good_name_abonement_command(
 # Add or Edit Abonement: WRONG name
 @router.message(StateFilter(AbonementGroup.name))
 async def process_wrong_name_abonement_command(message: Message) -> None:
-    logger.info(f"FSM: abonement: WRONG NAME for abonement")
+    logger.info("FSM: abonement: WRONG NAME for abonement")
     await message.answer(msg["ab_new_wrong_name"])
 
 
@@ -175,7 +175,7 @@ async def process_wrong_name_abonement_command(message: Message) -> None:
 async def process_good_visits_abonement_command(
     message: Message, state: FSMContext
 ) -> None:
-    logger.info(f"FSM: abonement: GOOD total visits for abonement")
+    logger.info("FSM: abonement: GOOD total visits for abonement")
     # Check Abonement total visits
     total_visits = int(message.text) if message.text else 0
     max_visits = config["BOT"]["ABONEMENTS"]["VISIT_COUNT_LIMIT"]
@@ -198,7 +198,7 @@ async def process_good_visits_abonement_command(
 # Add or Edit Abonement: WRONG total visits
 @router.message(StateFilter(AbonementGroup.total_visits))
 async def process_wrong_visits_abonement_command(message: Message) -> None:
-    logger.info(f"FSM: abonement: WRONG TOTAL visits for abonement")
+    logger.info("FSM: abonement: WRONG TOTAL visits for abonement")
     await message.answer(msg["ab_wrong_visits"])
 
 
@@ -210,7 +210,7 @@ async def process_wrong_visits_abonement_command(message: Message) -> None:
 async def process_good_description_abonement_command(
     message: Message, state: FSMContext, user_id: int, db: Database
 ) -> None:
-    logger.info(f"FSM: abonement: GOOD description for abonement")
+    logger.info("FSM: abonement: GOOD description for abonement")
     # Save Abonement
     if message.text and message.text == "/skip":
         await state.update_data(description=None)
@@ -236,7 +236,7 @@ async def process_good_description_abonement_command(
             logger.info(f"Updated abonement {abonement.id}")
         else:
             logger.warning(
-                f"FSM: abonement: can't update abonement {abonement_id} for user {user_id}"
+                f"FSM: abonement: can't update {abonement_id} for user {user_id}"
             )
     else:
         abonement = await db.abonement_create(
@@ -297,7 +297,7 @@ async def process_good_description_abonement_command(
 # Add or Edit Abonement: WRONG description
 @router.message(StateFilter(AbonementGroup.description))
 async def process_wrong_description_abonement_command(message: Message) -> None:
-    logger.info(f"FSM: abonement: WRONG description for abonement")
+    logger.info("FSM: abonement: WRONG description for abonement")
     await message.answer(
         **as_list(msg["ab_new_wrong_descr"], msg["ab_new_skip_descr"]).as_kwargs()
     )
@@ -308,7 +308,7 @@ async def process_wrong_description_abonement_command(message: Message) -> None:
 #
 @router.message(StateFilter(MainGroup.abonement_mode), F.text == cmd["join_abonement"])
 async def process_join_abonement_command(message: Message, state: FSMContext) -> None:
-    logger.info(f"FSM: abonement: BEGIN join abonement")
+    logger.info("FSM: abonement: BEGIN join abonement")
     await state.set_state(AbonementGroup.join)
     await message.answer(
         **as_list(msg["ab_join_begin"], Bold(msg["ab_join_key"])).as_kwargs(),
@@ -321,7 +321,7 @@ async def process_join_abonement_command(message: Message, state: FSMContext) ->
 async def process_good_key_join_abonement_command(
     message: Message, state: FSMContext, user_id: int, db: Database
 ) -> None:
-    logger.info(f"FSM: abonement: GOOD key for join abonement")
+    logger.info("FSM: abonement: GOOD key for join abonement")
     # Check token
     abonement_token = message.text.lower() if message.text else None
     if not abonement_token or not re.search(re_uuid, abonement_token):
@@ -367,7 +367,7 @@ async def process_good_key_join_abonement_command(
 # Abonement join: WRONG key
 @router.message(StateFilter(AbonementGroup.join))
 async def process_wrong_key_join_abonement_command(message: Message) -> None:
-    logger.info(f"FSM: abonement: WRONG key for join abonement")
+    logger.info("FSM: abonement: WRONG key for join abonement")
     await message.answer(
         **as_list(msg["ab_wrong_key_format"], Bold(msg["uuid_format"])).as_kwargs()
     )
@@ -378,7 +378,7 @@ async def process_wrong_key_join_abonement_command(message: Message) -> None:
 async def process_good_accept_join_abonement_command(
     message: Message, state: FSMContext, db: Database
 ) -> None:
-    logger.info(f"FSM: abonement: GOOD accept answer for join abonement")
+    logger.info("FSM: abonement: GOOD accept answer for join abonement")
     data = await state.get_data()
     await state.clear()
     await state.set_state(MainGroup.abonement_mode)
@@ -390,7 +390,7 @@ async def process_good_accept_join_abonement_command(
     abonement_id = data.get("abonement_id")
     abonement_token = data.get("abonement_token")
     if not user_id or not abonement_id or not abonement_token:
-        logger.warning(f"FSM: abonement: wrong state")
+        logger.warning("FSM: abonement: wrong state")
         return
     await db.abonement_user_add(
         user_id=user_id, abonement_id=abonement_id, abonement_token=abonement_token
@@ -401,7 +401,7 @@ async def process_good_accept_join_abonement_command(
 # Abonement join: WRONG accept answer
 @router.message(StateFilter(AbonementGroup.accept))
 async def process_wrong_accept_join_abonement_command(message: Message) -> None:
-    logger.info(f"FSM: abonement: WRONG accept answer for join abonement")
+    logger.info("FSM: abonement: WRONG accept answer for join abonement")
     await message.answer(msg["ab_wrong_yes_no"])
 
 
@@ -410,7 +410,7 @@ async def process_wrong_accept_join_abonement_command(message: Message) -> None:
 async def process_good_delete_abonement_command(
     message: Message, state: FSMContext, user_id: int, db: Database
 ) -> None:
-    logger.info(f"FSM: abonement: GOOD delete answer for abonement")
+    logger.info("FSM: abonement: GOOD delete answer for abonement")
     data = await state.get_data()
     await state.clear()
     await state.set_state(MainGroup.abonement_mode)

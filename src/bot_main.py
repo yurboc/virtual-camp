@@ -75,10 +75,12 @@ async def async_main() -> None:
     dp.include_router(deep_link_handlers.router)  # Deep links (always second)
     dp.include_router(fsm_mode_register.router)  # Register user
     dp.include_router(fsm_mode_generator.router)  # FST-OTM tables generator
-    dp.include_router(fsm_mode_abonement_cb.router)  # Abonement: handle callbacks
+    # Abonement: handle callbacks
+    dp.include_router(fsm_mode_abonement_cb.router)
     dp.include_router(fsm_mode_abonement.router)  # Abonement: handle messages
     dp.include_router(fsm_main_handlers.router)  # Main menu (always pre-last)
-    dp.include_router(other_handlers.router)  # All other messages (always last)
+    # All other messages (always last)
+    dp.include_router(other_handlers.router)
 
     # Add middleware
     dp.update.outer_middleware(DatabaseMiddleware(session=async_session))
@@ -95,9 +97,7 @@ async def async_main() -> None:
     # Create aiohttp.web.Application instance
     app = web.Application()
 
-    # Create an instance of request handler,
-    # aiogram has few implementations for different cases of usage
-    # In this example we use SimpleRequestHandler which is designed to handle simple cases
+    # Create an instance of request handler
     webhook_requests_handler = SimpleRequestHandler(
         dispatcher=dp,
         bot=bot,

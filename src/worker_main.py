@@ -23,7 +23,7 @@ def on_new_task_message(ch, method, properties, body):
         # Decode incoming message
         msg = json.loads(body.decode())
         job_type = msg.get("job_type", "no_job_type")
-    except:
+    except Exception:
         logger.warning(
             f"Error decoding incoming message: {body.decode()}", exc_info=True
         )

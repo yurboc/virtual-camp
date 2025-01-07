@@ -1,4 +1,3 @@
-import json
 import ftplib
 import os
 import logging
@@ -13,7 +12,7 @@ class TableUploader:
 
     def start(self):
         # Read credentials from file
-        logger.info(f"Authenticating to FTP...")
+        logger.info("Authenticating to FTP...")
         self.session = ftplib.FTP(
             config["CRED_FTP"]["server"],
             config["CRED_FTP"]["username"],

@@ -17,7 +17,7 @@ class TableConverter:
 
     def auth(self):
         # Read credentials from file
-        logger.info(f"Authenticating to Google...")
+        logger.info("Authenticating to Google...")
         credentials = Credentials.from_service_account_info(
             config["CRED_GOOGLE"],
             scopes=[

@@ -27,7 +27,7 @@ router = Router(name=__name__)
     StateFilter(default_state), or_f(Command("diag"), F.text == cmd["diag"])
 )
 async def process_diag_command(message: Message, state: FSMContext) -> None:
-    logger.info(f"FSM: diag: entering diag mode")
+    logger.info("FSM: diag: entering diag mode")
     await state.set_state(MainGroup.diag_mode)
     await message.answer(text=msg["diag_main"], reply_markup=kb.no_keyboard)
 
@@ -35,7 +35,7 @@ async def process_diag_command(message: Message, state: FSMContext) -> None:
 # Command /help in diag state
 @router.message(StateFilter(MainGroup.diag_mode), Command("help"))
 async def process_help_command(message: Message):
-    logger.info(f"FSM: diag: help command")
+    logger.info("FSM: diag: help command")
     await message.answer(
         **Text(as_list(Bold(help["diag_cmd"]), help["diag_info"])).as_kwargs()
     )
@@ -79,7 +79,7 @@ async def process_info_command(
 # All other messages in diag state
 @router.message(StateFilter(MainGroup.diag_mode))
 async def process_any_message(message: Message) -> None:
-    logger.info(f"FSM: diag: any message")
+    logger.info("FSM: diag: any message")
     content = Text(
         msg["diag_any_msg"],
         Pre(message.model_dump_json(indent=4, exclude_none=True), language="JSON"),

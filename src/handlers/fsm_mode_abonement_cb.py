@@ -18,7 +18,7 @@ from const.states import MainGroup, AbonementGroup
 from keyboards.common import AbonementCallbackFactory
 from storage.db_api import Database
 from utils.config import config
-from const.text import cmd, msg, ab_info, ab_page, ab_del_ask, ab_date_fmt
+from const.text import msg, ab_info, ab_page, ab_del_ask, ab_date_fmt
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)
@@ -47,10 +47,10 @@ async def callbacks_abonement_open(
     abonement = await db.abonement_by_id(callback_data.id)
     user = await db.user_by_tg_id(callback.from_user.id)
     if not abonement or abonement.token != callback_data.token or not user:
-        if callback.message and type(callback.message) == Message:
+        if callback.message and isinstance(callback.message, Message):
             await callback.message.answer(msg["ab_failure_callback"])
         return
-    if callback.message and type(callback.message) == Message:
+    if callback.message and isinstance(callback.message, Message):
         await callback.message.edit_reply_markup(None)
         visits_count = await db.abonement_visits_count(abonement.id)
         my_visits_count = await db.abonement_visits_count(abonement.id, user_id=user.id)
@@ -81,10 +81,10 @@ async def callbacks_abonement_reject_visit(
     await callback.answer()
     abonement = await db.abonement_by_id(callback_data.id)
     if not abonement or abonement.token != callback_data.token:
-        if callback.message and type(callback.message) == Message:
+        if callback.message and isinstance(callback.message, Message):
             await callback.message.answer(msg["ab_failure_callback"])
         return
-    if callback.message and type(callback.message) == Message:
+    if callback.message and isinstance(callback.message, Message):
         await callback.message.edit_reply_markup(None)
         await state.set_state(MainGroup.abonement_mode)
         await callback.message.answer(
@@ -109,11 +109,11 @@ async def callbacks_abonement_accept_visit(
     abonement = await db.abonement_by_id(callback_data.id)
     user = await db.user_by_tg_id(callback.from_user.id)
     if not abonement or abonement.token != callback_data.token or not user:
-        if callback.message and type(callback.message) == Message:
+        if callback.message and isinstance(callback.message, Message):
             await callback.message.answer(msg["ab_failure_callback"])
         return
     abonement_visit = await db.abonement_visit_add(abonement.id, user.id)
-    if callback.message and type(callback.message) == Message:
+    if callback.message and isinstance(callback.message, Message):
         await callback.message.edit_reply_markup(None)
         await state.set_state(MainGroup.abonement_mode)
         if abonement_visit:
@@ -143,10 +143,10 @@ async def callbacks_abonement_visits(
     await callback.answer()
     abonement = await db.abonement_by_id(callback_data.id)
     if not abonement or abonement.token != callback_data.token:
-        if callback.message and type(callback.message) == Message:
+        if callback.message and isinstance(callback.message, Message):
             await callback.message.answer(msg["ab_failure_callback"])
         return
-    if callback.message and type(callback.message) == Message:
+    if callback.message and isinstance(callback.message, Message):
         # Calculate pagination
         total = await db.abonement_visits_count(abonement.id)
         limit = (await state.get_data()).get(
@@ -220,10 +220,10 @@ async def callbacks_abonement_share(
     await callback.answer()
     abonement = await db.abonement_by_id(callback_data.id)
     if not abonement or abonement.token != callback_data.token:
-        if callback.message and type(callback.message) == Message:
+        if callback.message and isinstance(callback.message, Message):
             await callback.message.answer(msg["ab_failure_callback"])
         return
-    if callback.message and type(callback.message) == Message:
+    if callback.message and isinstance(callback.message, Message):
         await callback.message.edit_reply_markup(None)
         await state.set_state(MainGroup.abonement_mode)
         await callback.message.answer(
@@ -265,10 +265,10 @@ async def callbacks_abonement_edit(
         or not user
         or user.id != abonement.owner_id
     ):
-        if callback.message and type(callback.message) == Message:
+        if callback.message and isinstance(callback.message, Message):
             await callback.message.answer(msg["ab_failure_callback"])
         return
-    if callback.message and type(callback.message) == Message:
+    if callback.message and isinstance(callback.message, Message):
         await callback.message.edit_reply_markup(None)
         await state.set_data({"abonement_id": abonement.id})
         await state.set_state(AbonementGroup.name)
@@ -313,10 +313,10 @@ async def callbacks_abonement_delete(
     abonement = await db.abonement_by_id(callback_data.id)
     user = await db.user_by_tg_id(callback.from_user.id)
     if not abonement or abonement.token != callback_data.token or not user:
-        if callback.message and type(callback.message) == Message:
+        if callback.message and isinstance(callback.message, Message):
             await callback.message.answer(msg["ab_failure_callback"])
         return
-    if callback.message and type(callback.message) == Message:
+    if callback.message and isinstance(callback.message, Message):
         await callback.message.edit_reply_markup(None)
         await state.set_data(
             {

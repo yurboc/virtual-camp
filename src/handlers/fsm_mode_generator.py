@@ -60,7 +60,7 @@ def queue_publish_message(msg: dict) -> None:
     or_f(Command("tables"), F.text == cmd["tables"]),
 )
 async def process_generator_command(message: Message, state: FSMContext) -> None:
-    logger.info(f"FSM: generator: entering generator mode")
+    logger.info("FSM: generator: entering generator mode")
     await state.set_state(MainGroup.generator_mode)
     await message.answer(msg["table_main"], reply_markup=kb.get_generator_kb())
 
@@ -98,7 +98,7 @@ async def process_selected_table(
 # Help command for Generator
 @router.message(StateFilter(MainGroup.generator_mode), Command("help"))
 async def process_help_command(message: Message) -> None:
-    logger.info(f"FSM: generator: help command")
+    logger.info("FSM: generator: help command")
     content_list = [Text(help["table_cmd"])]
     for table in tables:
         content_list.append(
@@ -117,7 +117,7 @@ async def process_help_command(message: Message) -> None:
 async def process_cancel_command(
     message: Message, state: FSMContext, user_type: list[str]
 ) -> None:
-    logger.info(f"FSM: generator: cancel command")
+    logger.info("FSM: generator: cancel command")
     await state.clear()
     await message.answer(text=msg["table_end"], reply_markup=kb.get_main_kb(user_type))
 
@@ -125,5 +125,5 @@ async def process_cancel_command(
 # Unknown command for Generator
 @router.message(StateFilter(MainGroup.generator_mode))
 async def process_unknown_command(message: Message) -> None:
-    logger.info(f"FSM: generator: unknown command")
+    logger.info("FSM: generator: unknown command")
     await message.answer(msg["table_unknown"])

@@ -22,7 +22,7 @@ class MessageSender:
         try:
             # Decode message
             self.msg = json.loads(body.decode())
-        except:
+        except Exception:
             logger.warning("Error decoding", exc_info=True)
             return
 
@@ -39,7 +39,8 @@ class MessageSender:
                     break
             self.msg_text += f"Таблица: {table_name}\n"
         if self.msg.get("result"):
-            self.msg_text += f"Результат: {'Успешно' if self.msg['result'] == 'done' else 'Ошибка'}\n"
+            res = "Успешно" if self.msg["result"] == "done" else "Ошибка"
+            self.msg_text += f"Результат: {res}\n"
         logger.info("Done RabbitMQ message converting!")
 
     # Store notification to DB and send to Telegram
@@ -76,7 +77,7 @@ class MessageSender:
             try:
                 logger.info(f"Sending message to chat {chat_id}...")
                 await self.bot.send_message(chat_id=chat_id, text=text)
-            except:
+            except Exception:
                 logger.warning(
                     f"Error sending Telegram message to {chat_id}", exc_info=True
                 )
