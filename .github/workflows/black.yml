@@ -1,4 +1,4 @@
-name: Black formatter
+name: Black Lint
 
 on: [push, pull_request]
 
