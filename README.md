@@ -22,7 +22,17 @@
 
 ## Установка
 
-Устновка и запуск сервисов, проверено на Debian:
+### Установка зависимостей
+
+Проверено на Python 3.9.2
+
+    sudo apt install python3
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt
+
+### Устновка и запуск сервисов
+
+Проверено на Debian
 
     cd examples/systemd
     sudo cp virtualcamp-*.service /etc/systemd/system/
@@ -32,6 +42,12 @@
     sudo service virtualcamp-bot status
     sudo service virtualcamp-notifier status
     sudo service virtualcamp-worker status
+
+### Настройка окружения
+
+Файл *src/config/config.yaml* создаётся на основе *src/config/config.default.yaml*
+
+Файл *config.yaml* не добавляется в репозиторий, т.к. содежит логины и пароли.
 
 ## Удаление
 
