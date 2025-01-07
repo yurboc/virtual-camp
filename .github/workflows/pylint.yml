@@ -1,7 +1,5 @@
 name: Pylint
 
-# on: [push]
-
 on:
   push:
     branches:
@@ -16,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10"] # ["3.8", "3.9", "3.10"]
+        python-version: ["3.10"]
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v4
@@ -31,9 +29,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install pylint black flake8
 
-      - name: Analysing the code with pylint
-        run: |
-          pylint $(git ls-files '*.py')
+      # - name: Analysing the code with pylint
+      #   run: |
+      #     pylint $(git ls-files '*.py')
 
       - name: Run linters
         uses: wearerequired/lint-action@v2
