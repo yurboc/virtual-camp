@@ -97,7 +97,6 @@ class PictureCreator:
             )
 
         # Save image to temporary file
-        # temp_path = self.save_image_with_max_size(background, max_size=2 * 1024 * 1024)
         temp_path = self.save_image_with_quality(background, 95)
         return temp_path
 
