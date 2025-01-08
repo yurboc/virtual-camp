@@ -4,6 +4,7 @@ import pika
 from utils.config import config
 from utils.log import setup_logger
 from utils.table_worker import TableWorker
+from utils.picture_creator import PictureCreator
 
 # Setup logging
 logger = setup_logger(
@@ -14,6 +15,9 @@ logger = setup_logger(
 
 # Setup Table Generator
 table_worker = TableWorker()
+
+# Setup Picture Generator
+picture_creator = PictureCreator()
 
 
 # Handle new task from RabbitMQ
@@ -30,13 +34,15 @@ def on_new_task_message(ch, method, properties, body):
         ch.basic_ack(delivery_tag=method.delivery_tag)
         return
     # Call handler by job type
-    logger.info(f"Prepare handler for '{job_type}'...")
+    logger.info("Prepare handler for %s", job_type)
     if job_type == "table_generator":
         table_worker.handle_new_task(msg)
-    elif job_type == "image_generator":
-        pass
+    elif job_type == "pictures_generator":
+        picture_creator.handle_new_task(msg)
+    else:
+        logger.warning("Unknown job type: %s", job_type)
     ch.basic_ack(delivery_tag=method.delivery_tag)
-    logger.info(f"Done handler for '{job_type}'!")
+    logger.info("Done handler for %s", job_type)
 
 
 # MAIN

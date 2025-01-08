@@ -1,18 +1,13 @@
 import json
 import os
 import pika
+import logging
 from utils.table_converter import TableConverter
 from utils.table_uploader import TableUploader
 from utils.config import config
 from utils.config import tables
-from utils.log import setup_logger
 
-# Setup logging
-logger = setup_logger(
-    name=__name__,
-    file=config["LOG"]["NOTIFIER"]["FILE"],
-    level=config["LOG"]["NOTIFIER"]["LEVEL"],
-)
+logger = logging.getLogger(__name__)
 
 
 class TableWorker:

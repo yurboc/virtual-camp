@@ -16,6 +16,28 @@ class MessageExtractor:
         self.channel = None
         self.sender = MessageSender(bot_token, admin_id, session_maker)
 
+    # Handle messages from RabbitMQ queue
+    async def on_message_async(self, channel, method, properties, body):
+        logger.info("Async handler started...")
+        self.sender.convert_rabbitmq_message(body)  # sync handler (first)
+        logger.info("Create notification...")
+        await self.sender.create_notification()  # async handler (second)
+        channel.basic_ack(delivery_tag=method.delivery_tag)
+        logger.info("Message acked")
+
+    # Start RabbitMQ consumer
+    async def start(self):
+        logger.info("Create connection...")
+        self.connection = self.connect()
+        logger.info("Connection created")
+        await asyncio.Future()  # Keep the event loop running
+
+    # Close RabbitMQ connection
+    def stop(self):
+        if self.connection and not self.connection.is_closed:
+            self.connection.close()
+        logger.info("Connection closed")
+
     def connect(self):
         return AsyncioConnection(
             pika.URLParameters(self.url),
@@ -46,9 +68,10 @@ class MessageExtractor:
 
     def on_queue_declared(self, method_frame):
         logger.info("Queue declared")
-        self.channel.basic_consume(
-            queue=self.queue_name, on_message_callback=self.on_message
-        )
+        if self.channel:
+            self.channel.basic_consume(
+                queue=self.queue_name, on_message_callback=self.on_message
+            )
 
     def on_message(self, channel, method, properties, body):
         logger.info(f"Received message: {body.decode()}")
@@ -56,22 +79,3 @@ class MessageExtractor:
         asyncio.run_coroutine_threadsafe(
             self.on_message_async(channel, method, properties, body), loop
         )
-
-    async def on_message_async(self, channel, method, properties, body):
-        logger.info("Async handler started...")
-        self.sender.convert_rabbitmq_message(body)
-        logger.info("Create notification...")
-        await self.sender.create_notification()
-        channel.basic_ack(delivery_tag=method.delivery_tag)
-        logger.info("Message acked")
-
-    async def start(self):
-        logger.info("Create connection...")
-        self.connection = self.connect()
-        logger.info("Connection created")
-        await asyncio.Future()  # Keep the event loop running
-
-    def stop(self):
-        if self.connection and not self.connection.is_closed:
-            self.connection.close()
-        logger.info("Connection closed")

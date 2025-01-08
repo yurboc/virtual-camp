@@ -40,7 +40,7 @@ async def callbacks_abonement_open(
 ):
     logger.info("Abonement entering: %s", callback_data.id)
     await callback.answer()
-    await state.set_data(
+    await state.update_data(
         {"offset": 0, "limit": config["BOT"]["ABONEMENTS"]["PAGINATION_LIMIT"]}
     )
     await state.set_state(AbonementGroup.open)
@@ -165,7 +165,7 @@ async def callbacks_abonement_visits(
             if offset + limit >= total:
                 return
             offset += limit
-        await state.set_data({"offset": offset, "limit": limit})
+        await state.update_data({"offset": offset, "limit": limit})
         await callback.message.edit_reply_markup(None)
         # Get visits for current page
         visits_list = await db.abonement_visits_list(
@@ -270,7 +270,7 @@ async def callbacks_abonement_edit(
         return
     if callback.message and isinstance(callback.message, Message):
         await callback.message.edit_reply_markup(None)
-        await state.set_data({"abonement_id": abonement.id})
+        await state.update_data({"abonement_id": abonement.id})
         await state.set_state(AbonementGroup.name)
         # Ask new Abonement name
         await callback.message.answer(
@@ -318,7 +318,7 @@ async def callbacks_abonement_delete(
         return
     if callback.message and isinstance(callback.message, Message):
         await callback.message.edit_reply_markup(None)
-        await state.set_data(
+        await state.update_data(
             {
                 "abonement_id": abonement.id,
                 "abonement_key": abonement.token,

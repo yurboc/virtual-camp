@@ -18,4 +18,6 @@ async def send_cancel_answer(message: Message):
 # Default handler (for all other messages)
 @router.message()
 async def send_default_answer(message: Message):
-    await message.answer(**as_list(msg["unknown"], msg["help"]).as_kwargs())
+    await message.answer(
+        **as_list(msg["unknown"], msg["help"], msg["cancel"]).as_kwargs()
+    )

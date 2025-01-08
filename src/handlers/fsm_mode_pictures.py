@@ -45,12 +45,10 @@ def queue_publish_message(msg: dict) -> None:
     message_json = json.dumps(msg)
     connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
     channel = connection.channel()
-    channel.queue_declare(queue=config["RABBITMQ"]["QUEUES"]["TASKS"])
-    channel.basic_publish(
-        exchange="",
-        routing_key=config["RABBITMQ"]["QUEUES"]["TASKS"],
-        body=message_json,
-    )
+    queue = config["RABBITMQ"]["QUEUES"]["TASKS"]
+    channel.queue_declare(queue=queue)
+    logger.info("Publish to %s: %s", queue, message_json)
+    channel.basic_publish(exchange="", routing_key=queue, body=message_json)
     connection.close()
     logger.info("Done publishing message!")
 
@@ -63,7 +61,7 @@ def queue_publish_message(msg: dict) -> None:
 # Cancel command for Pictures mode
 @router.message(
     StateFilter(PicturesGroup),
-    (or_f(Command("cancel"), F.text.in_(cmd["exit"], cmd["go_home"]))),
+    (or_f(Command("cancel"), F.text.in_([cmd["exit"], cmd["go_home"]]))),
 )
 async def process_cancel_command(
     message: Message, state: FSMContext, user_type: list[str]
@@ -91,7 +89,30 @@ async def process_help_command(message: Message) -> None:
 async def process_entering_mode_command(message: Message, state: FSMContext) -> None:
     logger.info("FSM: pictures: entering pictures mode")
     await state.set_state(PicturesGroup.background)
-    await message.answer(msg["pictures_main"], reply_markup=kb.get_pictures_kb())
+    await message.answer(
+        msg["pictures_main"], reply_markup=kb.get_pictures_kb(select_mode=True)
+    )
+
+
+# Selected Picture output type
+@router.message(
+    StateFilter(PicturesGroup.background),
+    F.text.in_([cmd["as_picture"], cmd["as_document"]]),
+)
+async def process_output_type(message: Message, state: FSMContext) -> None:
+    logger.info("FSM: pictures: set output type")
+    if message.text and message.text == cmd["as_picture"]:
+        await state.update_data({"output_type": "picture"})
+        logger.info("FSM: pictures: output as picture")
+    elif message.text and message.text == cmd["as_document"]:
+        await state.update_data({"output_type": "document"})
+        logger.info("FSM: pictures: output as document")
+    else:
+        logger.warning(f"FSM: pictures: unknown output type: {message.text}")
+        return
+    await message.answer(
+        msg["pictures_output_mode"], reply_markup=kb.get_pictures_kb(select_mode=False)
+    )
 
 
 #  Selected Picture
@@ -103,7 +124,7 @@ async def process_selected_picture(message: Message, state: FSMContext) -> None:
         logger.warning(f"FSM: pictures: job {message.text} not found")
         await message.answer(msg["pictures_bad_task"])
         return
-    await state.set_data({"picture": picture})
+    await state.update_data({"picture": picture})
     await state.set_state(PicturesGroup.text)
     await message.answer(msg["pictures_text"], reply_markup=kb.no_keyboard)
 
@@ -115,15 +136,20 @@ async def process_text(
 ) -> None:
     logger.info("FSM: pictures: got text")
     # Check text
-    text: str
-    if message.text and message.text.isprintable():
-        text = message.text.strip()
-    lines = text.split("\n")
-    if len(lines) not in [1, 2]:
-        await message.answer(msg["pictures_bat_text"])
+    text = message.text.strip() if message.text else ""
+    lines_list_orig = text.split("\n")
+    lines_list_cleaned = []
+    for line in lines_list_orig:
+        line = line.strip()
+        if line:
+            lines_list_cleaned.append(line)
+    if len(lines_list_cleaned) not in [1, 2]:
+        await message.answer(msg["pictures_bad_text"])
         return
     # Create task
-    picture = (await state.get_data()).get("picture")
+    data = await state.get_data()
+    picture = data.get("picture")
+    output_type = data.get("output_type")
     task_uuid = str(uuid.uuid4())
     user = await db.user_by_id(user_id)
     if not user:
@@ -138,10 +164,11 @@ async def process_text(
         "task_id": task.id,
         "job_type": "pictures_generator",
         "picture": picture,
-        "text": text,
+        "lines": lines_list_cleaned,
+        "output_type": output_type,
     }
+    logger.debug(f"FSM: pictures: task '{queue_msg}' prepared")
     queue_publish_message(queue_msg)
-    await state.clear()
     await message.answer(
         **as_list(msg["pictures_generating"], as_key_value("ID", task.id)).as_kwargs(),
         reply_markup=kb.go_home_kb,

@@ -3,6 +3,7 @@
 - generator_name: nu2025
   title: Школа НУ-2025
   file: cover-2025-nu.jpg
+  font: Montserrat-SemiBold.ttf
   width: 1920
   height: 1080
   frame-top-y: 630
@@ -13,6 +14,7 @@
 - generator_name: bu2025
   title: Школа БУ-2025
   file: cover-2025-bu.jpg
+  font: Montserrat-SemiBold.ttf
   width: 1920
   height: 1080
   frame-top-y: 630
@@ -23,6 +25,7 @@
 - generator_name: su2025
   title: Школа СУ-2025
   file: cover-2025-su.jpg
+  font: Montserrat-SemiBold.ttf
   width: 1920
   height: 1080
   frame-top-y: 630
