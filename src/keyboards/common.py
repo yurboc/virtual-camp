@@ -17,14 +17,28 @@ class AbonementCallbackFactory(CallbackData, prefix="abonement"):
 
 # MAIN MENU
 def get_main_kb(user_type: list[str] = ["unknown"]) -> ReplyKeyboardMarkup:
-    buttons_name_reg = [cmd["diag"], cmd["tables"], cmd["abonements"], cmd["pictures"]]
-    buttons_name_unreg = [cmd["register"]] + buttons_name_reg
-    if "registered" in user_type:
-        buttons_name = buttons_name_reg
-    else:
-        buttons_name = buttons_name_unreg
+    # All possible buttons
+    buttons_for_all = [cmd["abonements"]]
+    buttons_for_unregistered = [cmd["register"]]
+    buttons_for_developer = [cmd["diag"]]
+    buttons_for_fst_otm = [cmd["tables"]]
+    buttons_for_youtube_adm = [cmd["pictures"]]
+
+    # Get available buttons
+    buttons_available = []
+    if "unregistered" in user_type:
+        buttons_available.extend(buttons_for_unregistered)
+    if "developer" in user_type:
+        buttons_available.extend(buttons_for_developer)
+    if "fst_otm" in user_type:
+        buttons_available.extend(buttons_for_fst_otm)
+    if "youtube_adm" in user_type:
+        buttons_available.extend(buttons_for_youtube_adm)
+    buttons_available.extend(buttons_for_all)
+
+    # Build keyboard
     buttons: list[KeyboardButton] = []
-    for name in buttons_name:
+    for name in buttons_available:
         buttons.append(KeyboardButton(text=name))
     kb_builder = ReplyKeyboardBuilder()
     kb_builder.row(*buttons, width=2)
