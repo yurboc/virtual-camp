@@ -5,8 +5,9 @@ from aiogram.types import Message
 from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
-from aiogram.utils.formatting import Text, Bold, as_list
-from const.text import msg, help
+from aiogram.utils.formatting import Text, as_list
+from const.text import msg
+from utils.help_generator import generate_top_level_help
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)
@@ -24,23 +25,10 @@ async def command_start_handler(message: Message, user_type: list[str]) -> None:
 
 # Command /help on default state
 @router.message(StateFilter(default_state), Command("help"))
-async def process_help_command(message: Message) -> None:
+async def process_help_command(message: Message, user_type: list[str]) -> None:
     logger.info("Got HELP command")
-    await message.answer(
-        **Text(
-            as_list(
-                Bold(help["all_cmd"]),
-                help["all_start"],
-                help["all_help"],
-                help["all_cancel"],
-                Bold(help["my_cmd"]),
-                help["my_diag"],
-                help["my_register"],
-                help["my_tables"],
-                help["my_abonement"],
-            )
-        ).as_kwargs()
-    )
+    help = generate_top_level_help(user_type)
+    await message.answer(**help.as_kwargs())
 
 
 # Command cancel in WRONG state (not handled active process)

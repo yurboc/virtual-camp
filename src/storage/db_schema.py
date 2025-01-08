@@ -44,7 +44,7 @@ class TgUser(Base):
     tg_username: Mapped[Optional[str]] = mapped_column(String(60))
     tg_phone: Mapped[Optional[str]] = mapped_column(String(30))
     name: Mapped[Optional[str]] = mapped_column(String(60))
-    status: Mapped[str] = mapped_column(String(15))
+    status: Mapped[str]
     create_ts: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,
         nullable=False,
