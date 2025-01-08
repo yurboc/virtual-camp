@@ -13,10 +13,11 @@ from aiogram.utils.formatting import (
     as_list,
     as_marked_list,
     as_key_value,
+    as_numbered_section,
 )
 from const.states import MainGroup
 from storage.db_api import Database
-from const.text import cmd, msg, help
+from const.text import cmd, msg, help, user_types
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)
@@ -61,6 +62,12 @@ async def process_info_command(
 ) -> None:
     logger.info(f"FSM: diag: info command, user_id={user_id}, user_type={user_type}")
     user = await db.user_by_id(user_id)
+    access_list: list[Text] = []
+    for k, v in user_types.items():
+        if k in user_type:
+            access_list.append(Text(msg["m_yes"], v))
+        else:
+            access_list.append(Text(msg["m_no"], v))
     content = as_list(
         msg["diag_info"],
         as_marked_list(
@@ -68,6 +75,7 @@ async def process_info_command(
             as_key_value("user_tg_id", user_tg_id),
             as_key_value("user_type", user_type),
         ),
+        as_numbered_section(Bold(msg["access_list"]), *access_list),
         Pre(user),
     )
     await message.answer(

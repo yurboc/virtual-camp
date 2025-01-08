@@ -12,7 +12,9 @@ router = Router(name=__name__)
 # Default cancel (no active processes)
 @router.message(Command("cancel"))
 async def send_cancel_answer(message: Message):
-    await message.answer(**as_list(msg["no_proc"], msg["help"]).as_kwargs())
+    await message.answer(
+        **as_list(msg["no_proc"], msg["help"], msg["start"]).as_kwargs()
+    )
 
 
 # Default handler (for all other messages)

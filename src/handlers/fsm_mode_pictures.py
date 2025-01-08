@@ -86,8 +86,15 @@ async def process_help_command(message: Message) -> None:
 @router.message(
     StateFilter(default_state), or_f(Command("pictures"), F.text == cmd["pictures"])
 )
-async def process_entering_mode_command(message: Message, state: FSMContext) -> None:
+async def process_entering_mode_command(
+    message: Message, state: FSMContext, user_type: list[str]
+) -> None:
     logger.info("FSM: pictures: entering pictures mode")
+    if "youtube_adm" not in user_type:
+        logger.warning("FSM: pictures: no access")
+        await state.clear()
+        await message.answer(msg["no_access"], reply_markup=kb.get_main_kb(user_type))
+        return
     await state.set_state(PicturesGroup.background)
     await message.answer(
         msg["pictures_main"], reply_markup=kb.get_pictures_kb(select_mode=True)

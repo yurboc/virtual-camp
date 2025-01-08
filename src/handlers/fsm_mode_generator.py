@@ -59,8 +59,15 @@ def queue_publish_message(msg: dict) -> None:
     StateFilter(default_state),
     or_f(Command("tables"), F.text == cmd["tables"]),
 )
-async def process_generator_command(message: Message, state: FSMContext) -> None:
+async def process_generator_command(
+    message: Message, state: FSMContext, user_type: list[str]
+) -> None:
     logger.info("FSM: generator: entering generator mode")
+    if "fst_otm" not in user_type:
+        logger.warning("FSM: generator: no access")
+        await state.clear()
+        await message.answer(msg["no_access"], reply_markup=kb.get_main_kb(user_type))
+        return
     await state.set_state(MainGroup.generator_mode)
     await message.answer(msg["table_main"], reply_markup=kb.get_generator_kb())
 
