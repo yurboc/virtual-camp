@@ -14,6 +14,7 @@ class InvitesGroup(StatesGroup):
     begin = State()
     create = State()
     history = State()
+    done = State()
 
 
 # FSM Pictures group

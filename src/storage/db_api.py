@@ -1,7 +1,6 @@
 import logging
 import uuid
-import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Optional, Sequence, Union
 from aiogram.types import TelegramObject, User, Message
 from storage.db_schema import TgUpdate, TgMessage, TgUser, TgNotification, TgTask
@@ -332,6 +331,20 @@ class Database:
         await self.session.commit()
         return invite
 
+    # Invite list
+    async def invite_list(self) -> Sequence[TgInvite]:
+        stmt = select(TgInvite)
+        result = await self.session.execute(stmt)
+        invites = result.scalars().all()
+        return invites
+
+    # Invite users
+    async def invite_users(self, invite: TgInvite) -> Sequence[TgInviteUser]:
+        stmt = select(TgInviteUser).where(TgInviteUser.invite_id == invite.id)
+        result = await self.session.execute(stmt)
+        invite_users = result.scalars().all()
+        return invite_users
+
     # Get invite
     async def invite_by_token(self, token: str) -> Optional[TgInvite]:
         stmt = select(TgInvite).where(TgInvite.token == token)
@@ -349,16 +362,20 @@ class Database:
         stmt = func.count().select().where(TgInviteUser.id == user.id)
         result = await self.session.execute(stmt)
         accepted_invites = result.scalars().all()
-        if len(accepted_invites) >= invite.max_uses:
+        if invite.max_uses and len(accepted_invites) >= invite.max_uses:
             return False
         # Check max days
-        if datetime.datetime.now() > invite.ts_created + timedelta(
+        if invite.max_days and datetime.now() > invite.ts_created + timedelta(
             days=invite.max_days
         ):
             return False
         # Accept invite by user
         groups = user.status.split()
         groups.append(invite.group)
+        if "registered" in groups and invite.group == "unregistered":
+            groups.remove("registered")
+        elif "unregistered" in groups and invite.group == "registered":
+            groups.remove("unregistered")
         user.status = " ".join(groups)
         # Accept invite
         invite_user = TgInviteUser(user_id=user_id, invite_id=invite.id)

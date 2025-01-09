@@ -56,7 +56,9 @@ class TgUser(Base):
         server_default=func.CURRENT_TIMESTAMP(),
         onupdate=func.CURRENT_TIMESTAMP(),
     )
-    invites: Mapped[List["TgInvite"]] = relationship("TgInvite", back_populates="user")
+    invites: Mapped[List["TgInviteUser"]] = relationship(
+        "TgInviteUser", back_populates="user"
+    )
     tasks: Mapped[List["TgTask"]] = relationship("TgTask", back_populates="user")
     notifications: Mapped[List["TgNotification"]] = relationship(
         "TgNotification", back_populates="user"
@@ -163,6 +165,7 @@ class TgInvite(Base):
     group: Mapped[str]
     max_uses: Mapped[int]
     max_days: Mapped[int]
+    active: Mapped[bool]
     ts_created: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,
         nullable=False,
@@ -173,6 +176,9 @@ class TgInvite(Base):
         nullable=False,
         server_default=func.CURRENT_TIMESTAMP(),
         onupdate=func.CURRENT_TIMESTAMP(),
+    )
+    users: Mapped[List["TgInviteUser"]] = relationship(
+        "TgInviteUser", back_populates="invite"
     )
 
 

@@ -5,7 +5,7 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from aiogram.filters.callback_data import CallbackData
 from storage.db_schema import TgAbonement
 from utils.config import tables, pictures
-from const.text import cmd
+from const.text import cmd, user_types
 
 
 # Abonement Callback factory
@@ -59,6 +59,20 @@ def invites_kb() -> ReplyKeyboardMarkup:
     buttons.append(KeyboardButton(text=cmd["exit"]))
     kb_builder = ReplyKeyboardBuilder()
     kb_builder.row(*buttons, width=2)
+    kb_markup: ReplyKeyboardMarkup = kb_builder.as_markup(
+        one_time_keyboard=True, resize_keyboard=True
+    )
+    return kb_markup
+
+
+# INVITES CREATION MENU
+def get_new_invite_kb() -> ReplyKeyboardMarkup:
+    buttons: list[KeyboardButton] = []
+    for _, v in user_types.items():
+        buttons.append(KeyboardButton(text=v))
+    buttons.append(KeyboardButton(text=cmd["exit"]))
+    kb_builder = ReplyKeyboardBuilder()
+    kb_builder.row(*buttons, width=1)
     kb_markup: ReplyKeyboardMarkup = kb_builder.as_markup(
         one_time_keyboard=True, resize_keyboard=True
     )
