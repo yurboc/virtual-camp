@@ -1,9 +1,12 @@
 import logging
 import uuid
+import datetime
+from datetime import timedelta
 from typing import Optional, Sequence, Union
 from aiogram.types import TelegramObject, User, Message
 from storage.db_schema import TgUpdate, TgMessage, TgUser, TgNotification, TgTask
 from storage.db_schema import TgAbonement, TgAbonementUser, TgAbonementVisit
+from storage.db_schema import TgInvite, TgInviteUser
 from sqlalchemy import select, or_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.expression import func
@@ -321,3 +324,45 @@ class Database:
         self.session.add(abonement_visit)
         await self.session.commit()
         return abonement_visit
+
+    # Create invite
+    async def invite_create(self, token: str, group: str) -> TgInvite:
+        invite = TgInvite(token=token, group=group, max_uses=0, max_days=0)
+        self.session.add(invite)
+        await self.session.commit()
+        return invite
+
+    # Get invite
+    async def invite_by_token(self, token: str) -> Optional[TgInvite]:
+        stmt = select(TgInvite).where(TgInvite.token == token)
+        result = await self.session.execute(stmt)
+        invite = result.scalars().first()
+        return invite
+
+    # Accept invite
+    async def invite_accept(self, user_id: int, invite: TgInvite) -> bool:
+        # Get user
+        user = await self.user_by_id(user_id)
+        if not user:
+            return False
+        # Check max uses
+        stmt = func.count().select().where(TgInviteUser.id == user.id)
+        result = await self.session.execute(stmt)
+        accepted_invites = result.scalars().all()
+        if len(accepted_invites) >= invite.max_uses:
+            return False
+        # Check max days
+        if datetime.datetime.now() > invite.ts_created + timedelta(
+            days=invite.max_days
+        ):
+            return False
+        # Accept invite by user
+        groups = user.status.split()
+        groups.append(invite.group)
+        user.status = " ".join(groups)
+        # Accept invite
+        invite_user = TgInviteUser(user_id=user_id, invite_id=invite.id)
+        self.session.add(invite_user)
+        # Save changes
+        await self.session.commit()
+        return True

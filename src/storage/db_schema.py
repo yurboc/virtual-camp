@@ -56,6 +56,7 @@ class TgUser(Base):
         server_default=func.CURRENT_TIMESTAMP(),
         onupdate=func.CURRENT_TIMESTAMP(),
     )
+    invites: Mapped[List["TgInvite"]] = relationship("TgInvite", back_populates="user")
     tasks: Mapped[List["TgTask"]] = relationship("TgTask", back_populates="user")
     notifications: Mapped[List["TgNotification"]] = relationship(
         "TgNotification", back_populates="user"
@@ -89,7 +90,7 @@ class TgTask(Base):
         nullable=False,
         server_default=func.CURRENT_TIMESTAMP(),
     )
-    uuid: Mapped[str]
+    uuid: Mapped[str] = mapped_column(String(60), unique=True)
     user: Mapped[TgUser] = relationship("TgUser", back_populates="tasks")
     user_id: Mapped[int] = mapped_column(ForeignKey("tg_users.id"))
 
@@ -153,3 +154,37 @@ class TgAbonementVisit(Base):
         "TgAbonement", back_populates="visits"
     )
     abonement_id: Mapped[int] = mapped_column(ForeignKey("tg_abonements.id"))
+
+
+class TgInvite(Base):
+    __tablename__ = "tg_invites"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, unique=True)
+    token: Mapped[str] = mapped_column(String(60), index=True, unique=True)
+    group: Mapped[str]
+    max_uses: Mapped[int]
+    max_days: Mapped[int]
+    ts_created: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP,
+        nullable=False,
+        server_default=func.CURRENT_TIMESTAMP(),
+    )
+    ts_updated: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP,
+        nullable=False,
+        server_default=func.CURRENT_TIMESTAMP(),
+        onupdate=func.CURRENT_TIMESTAMP(),
+    )
+
+
+class TgInviteUser(Base):
+    __tablename__ = "tg_invite_users"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, unique=True)
+    user: Mapped[TgUser] = relationship("TgUser", back_populates="invites")
+    user_id: Mapped[int] = mapped_column(ForeignKey("tg_users.id"))
+    invite: Mapped[TgInvite] = relationship("TgInvite", back_populates="users")
+    invite_id: Mapped[int] = mapped_column(ForeignKey("tg_invites.id"))
+    ts: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP,
+        nullable=False,
+        server_default=func.CURRENT_TIMESTAMP(),
+    )

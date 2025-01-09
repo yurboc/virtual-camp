@@ -14,6 +14,7 @@ from middleware.inner import StoreAllMessages
 from handlers import (
     deep_link_handlers,
     fsm_main_handlers,
+    fsm_mode_invites,
     fsm_mode_pictures,
     other_handlers,
     fsm_mode_diag,
@@ -75,6 +76,7 @@ async def async_main() -> None:
     dp.include_router(fsm_mode_diag.router)  # Diag mode (always first)
     dp.include_router(deep_link_handlers.router)  # Deep links (always second)
     dp.include_router(fsm_mode_register.router)  # Register user
+    dp.include_router(fsm_mode_invites.router)  # Invite user
     dp.include_router(fsm_mode_generator.router)  # FST-OTM tables generator
     dp.include_router(fsm_mode_pictures.router)  # Picture  generation mode
     dp.include_router(fsm_mode_abonement_cb.router)  # Abonement: callbacks

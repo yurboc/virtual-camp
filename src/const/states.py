@@ -9,6 +9,13 @@ class MainGroup(StatesGroup):
     abonement_mode = State()
 
 
+# FSM Invites group
+class InvitesGroup(StatesGroup):
+    begin = State()
+    create = State()
+    history = State()
+
+
 # FSM Pictures group
 class PicturesGroup(StatesGroup):
     background = State()

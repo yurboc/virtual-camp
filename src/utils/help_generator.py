@@ -11,6 +11,8 @@ def generate_top_level_help(user_type: list[str] = ["unknown"]) -> Text:
     tokens.append(Bold(help["my_cmd"]))
     tokens.append(Text(help["my_diag"]))
     tokens.append(Text(help["my_register"]))
+    if "invite_adm" in user_type:
+        tokens.append(Text(help["my_invite"]))
     if "fst_otm" in user_type:
         tokens.append(Text(help["my_tables"]))
     if "youtube_adm" in user_type:

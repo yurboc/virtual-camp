@@ -49,13 +49,30 @@ async def command_start_handler(
         await message.answer(
             **Text(as_list(msg["ab_joined"], Bold(abonement.name))).as_kwargs()
         )
+    # DEEP LINKING: MODE 'invite': add user to priveleged group
+    elif len(args) == 2 and args[0] == "invite" and re.search(re_uuid, args[1]):
+        # Get group type by povided token
+        invite = await db.invite_by_token(args[1])
+        if not invite:
+            await message.answer(text=msg["invite_err_key"])
+            return
+        # Check user is not already in priveleged group
+        if invite.group in user_type:
+            await message.answer(text=msg["invite_err_joined"])
+            return
+        # Add user to priveleged group
+        res = await db.invite_accept(user_id=user_id, invite=invite)
+        if res:
+            await message.answer(text=msg["invite_ok"])
+        else:
+            await message.answer(text=msg["invite_err_unknown"])
     else:
         # Default start with wrong parameters
         await state.clear()
         await message.answer(
             **Text(
                 as_list(
-                    msg["hello_bot"], "", Italic(msg["ab_err_params"]), msg["main_menu"]
+                    msg["hello_bot"], "", Italic(msg["err_params"]), msg["main_menu"]
                 )
             ).as_kwargs(),
             reply_markup=kb.get_main_kb(user_type),
