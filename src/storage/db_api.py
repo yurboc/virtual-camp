@@ -135,11 +135,7 @@ class Database:
     # Abonements list for owner
     async def abonements_list_by_owner(self, user: TgUser) -> Sequence[TgAbonement]:
         stmt = select(TgAbonement).where(
-            TgAbonement.owner_id == user.id,
-            or_(
-                TgAbonement.hidden == None,  # noqa: E711
-                TgAbonement.hidden != True,  # noqa: E712
-            ),
+            TgAbonement.owner_id == user.id, TgAbonement.hidden == False
         )
         result = await self.session.execute(stmt)
         abonements = result.scalars().all()
@@ -150,13 +146,7 @@ class Database:
         stmt = (
             select(TgAbonement)
             .join(TgAbonementUser)
-            .where(
-                TgAbonementUser.user_id == user.id,
-                or_(
-                    TgAbonement.hidden == None,  # noqa: E711
-                    TgAbonement.hidden != True,  # noqa: E712
-                ),
-            )
+            .where(TgAbonementUser.user_id == user.id, TgAbonement.hidden == False)
         )
         result = await self.session.execute(stmt)
         abonements = result.scalars().all()
@@ -326,7 +316,7 @@ class Database:
 
     # Create invite
     async def invite_create(self, token: str, group: str) -> TgInvite:
-        invite = TgInvite(token=token, group=group, max_uses=0, max_days=0)
+        invite = TgInvite(token=token, group=group, max_uses=0, max_days=0, active=True)
         self.session.add(invite)
         await self.session.commit()
         return invite

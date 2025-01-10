@@ -117,7 +117,7 @@ class TgAbonement(Base):
     name: Mapped[str]
     total_visits: Mapped[int]
     description: Mapped[Optional[str]]
-    hidden: Mapped[Optional[bool]]
+    hidden: Mapped[bool]
     create_ts: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP,
         nullable=False,
