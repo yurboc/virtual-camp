@@ -1,12 +1,18 @@
 import logging
-from aiogram import Router
+from aiogram import F, Router
 from aiogram.types import Message
 from aiogram.filters import Command
-from const.text import msg
 from aiogram.utils.formatting import as_list
+from const.text import msg, re_uuid
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)
+
+
+# Default token handler
+@router.message(F.text.regexp(re_uuid))
+async def send_token_answer(message: Message):
+    await message.answer("Can't handle key without type")
 
 
 # Default cancel (no active processes)

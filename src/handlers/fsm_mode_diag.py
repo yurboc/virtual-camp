@@ -1,4 +1,5 @@
 import logging
+import subprocess
 import keyboards.common as kb
 from aiogram import F, Router
 from aiogram.types import Message
@@ -10,10 +11,11 @@ from aiogram.utils.formatting import (
     Text,
     Bold,
     Pre,
+    Code,
     as_list,
-    as_marked_list,
     as_key_value,
     as_numbered_section,
+    as_marked_section,
 )
 from const.states import MainGroup
 from storage.db_api import Database
@@ -21,6 +23,17 @@ from const.text import cmd, msg, help, user_types
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)
+
+
+# Get Bot version
+def get_bot_version() -> str:
+    version = (
+        subprocess.check_output(["git", "describe", "--long", "--tags", "--always"])
+        .decode("utf-8")
+        .strip()
+    )
+    logger.info(f"Bot version: {version}")
+    return version
 
 
 # Entering diagnostic mode
@@ -61,6 +74,7 @@ async def process_info_command(
     message: Message, db: Database, user_id: int, user_tg_id: int, user_type: list[str]
 ) -> None:
     logger.info(f"FSM: diag: info command, user_id={user_id}, user_type={user_type}")
+    # Get user info
     user = await db.user_by_id(user_id)
     access_list: list[Text] = []
     for k, v in user_types.items():
@@ -68,16 +82,31 @@ async def process_info_command(
             access_list.append(Text(msg["m_yes"], v))
         else:
             access_list.append(Text(msg["m_no"], v))
+    # Get bot info
+    version = get_bot_version()
+    # Create message
     content = as_list(
-        msg["diag_info"],
-        as_marked_list(
+        as_marked_section(
+            Bold(msg["diag_sys_info"]),
+            as_key_value(msg["diag_version"], Code(version)),
+        ),
+        "",
+        as_marked_section(
+            Bold(msg["diag_bot_info"]),
             as_key_value("user_id", user_id),
             as_key_value("user_tg_id", user_tg_id),
             as_key_value("user_type", user_type),
         ),
-        as_numbered_section(Bold(msg["access_list"]), *access_list),
+        "",
+        as_numbered_section(
+            Bold(msg["access_list"]),
+            *access_list,
+        ),
+        "",
+        Bold(msg["diag_db_info"]),
         Pre(user),
     )
+    # Send message
     await message.answer(
         **content.as_kwargs(),
         reply_markup=kb.no_keyboard,
