@@ -38,17 +38,17 @@ class MessageSender:
         logger.info("Prepare table generator result...")
         self.msg_text = "Получен результат генерации таблицы\n\n"
         if msg.get("task_id"):
-            self.task_id = int(self.msg["task_id"])
-            self.msg_text += f"ID: {self.msg['task_id']}\n"
-        if self.msg.get("table"):
-            table_name = self.msg["table"]
+            self.task_id = int(msg["task_id"])
+            self.msg_text += f"ID: {msg['task_id']}\n"
+        if msg.get("table"):
+            table_name = msg["table"]
             for table in tables:
                 if table["generator_name"] == table_name:
                     table_name = table["title"]
                     break
             self.msg_text += f"Таблица: {table_name}\n"
-        if self.msg.get("result"):
-            res = "Успешно" if self.msg["result"] == "done" else "Ошибка"
+        if msg.get("result"):
+            res = "Успешно" if msg["result"] == "done" else "Ошибка"
             self.msg_text += f"Результат: {res}\n"
         self.pending = "text"
         logger.info("Done table generator result!")
@@ -58,11 +58,11 @@ class MessageSender:
         logger.info("Prepare pictures generator result...")
         self.msg_text = "Получен результат генерации обложки"
         if msg.get("task_id"):
-            self.task_id = int(self.msg["task_id"])
-            self.msg_text += f" (ID: {self.msg['task_id']})"
-        if self.msg.get("image"):
+            self.task_id = int(msg["task_id"])
+            self.msg_text += f" (ID: {msg['task_id']})"
+        if msg.get("image"):
             self.file_path = msg["image"]
-            self.pending = self.msg.get("output_type", "picture")
+            self.pending = msg.get("output_type", "picture")
         else:
             self.pending = ""
             logger.warning("Error: image not found in task result")
@@ -73,7 +73,7 @@ class MessageSender:
         logger.info("Convert RabbitMQ incoming message...")
         # Decode message
         try:
-            self.msg = json.loads(body.decode())
+            msg = json.loads(body.decode())
         except Exception:
             logger.warning("Error decoding", exc_info=True)
             return
@@ -82,13 +82,13 @@ class MessageSender:
         self.msg_text = ""
         self.file_path = ""
         self.pending = ""
-        logger.info("Incoming message: %s", self.msg)
-        if self.msg.get("job_type") == "table_generator":
-            self.prepare_table_generator_result(self.msg)
-        elif self.msg.get("job_type") == "pictures_generator":
-            self.prepare_pictures_generator_result(self.msg)
+        logger.info("Incoming message: %s", msg)
+        if msg.get("job_type") == "table_generator":
+            self.prepare_table_generator_result(msg)
+        elif msg.get("job_type") == "pictures_generator":
+            self.prepare_pictures_generator_result(msg)
         else:
-            logger.warning("Unknown job type: %s", self.msg.get("job_type"))
+            logger.warning("Unknown job type: %s", msg.get("job_type"))
             return
         logger.info("Done RabbitMQ message converting!")
 
