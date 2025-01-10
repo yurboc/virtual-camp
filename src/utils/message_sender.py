@@ -62,7 +62,9 @@ class MessageSender:
             self.msg_text += f" (ID: {msg['task_id']})"
         if msg.get("image"):
             self.file_path = msg["image"]
-            self.pending = msg.get("output_type", "picture")
+            self.pending = msg.get("output_type")
+            if not self.pending:
+                self.pending = "picture"
         else:
             self.pending = ""
             logger.warning("Error: image not found in task result")
