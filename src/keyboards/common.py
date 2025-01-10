@@ -245,7 +245,7 @@ def get_abonement_history_kb(
 
 # GO TO MAIN KEYBOARD
 go_home_kb = ReplyKeyboardMarkup(
-    keyboard=[[KeyboardButton(text=cmd["go_home"])]], resize_keyboard=True
+    keyboard=[[KeyboardButton(text=cmd["exit"])]], resize_keyboard=True
 )
 
 # YES-NO KEYBOARD

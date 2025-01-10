@@ -60,8 +60,7 @@ def queue_publish_message(msg: dict) -> None:
 
 # Cancel command for Pictures mode
 @router.message(
-    StateFilter(PicturesGroup),
-    (or_f(Command("cancel"), F.text.in_([cmd["exit"], cmd["go_home"]]))),
+    StateFilter(PicturesGroup), or_f(Command("cancel"), F.text == cmd["exit"])
 )
 async def process_cancel_command(
     message: Message, state: FSMContext, user_type: list[str]

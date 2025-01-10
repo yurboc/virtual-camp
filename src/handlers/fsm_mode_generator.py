@@ -119,7 +119,7 @@ async def process_help_command(message: Message) -> None:
 # Cancel command for Generator
 @router.message(
     StateFilter(MainGroup.generator_mode),
-    (or_f(Command("cancel"), F.text.in_([cmd["exit"], cmd["go_home"]]))),
+    (or_f(Command("cancel"), F.text == cmd["exit"])),
 )
 async def process_cancel_command(
     message: Message, state: FSMContext, user_type: list[str]

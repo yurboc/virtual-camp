@@ -44,8 +44,7 @@ def get_group_by_name(group_name: Optional[str]) -> Optional[str]:
 
 # Cancel command for Invites mode
 @router.message(
-    StateFilter(InvitesGroup),
-    (or_f(Command("cancel"), F.text.in_([cmd["exit"], cmd["go_home"]]))),
+    StateFilter(InvitesGroup), (or_f(Command("cancel"), F.text == cmd["exit"]))
 )
 async def process_cancel_command(
     message: Message, state: FSMContext, user_type: list[str]

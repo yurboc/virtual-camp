@@ -6,7 +6,7 @@ from aiogram.types import TelegramObject, User, Message
 from storage.db_schema import TgUpdate, TgMessage, TgUser, TgNotification, TgTask
 from storage.db_schema import TgAbonement, TgAbonementUser, TgAbonementVisit
 from storage.db_schema import TgInvite, TgInviteUser
-from sqlalchemy import select, or_
+from sqlalchemy import select, not_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.expression import func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -135,7 +135,7 @@ class Database:
     # Abonements list for owner
     async def abonements_list_by_owner(self, user: TgUser) -> Sequence[TgAbonement]:
         stmt = select(TgAbonement).where(
-            TgAbonement.owner_id == user.id, TgAbonement.hidden == False
+            TgAbonement.owner_id == user.id, not_(TgAbonement.hidden)
         )
         result = await self.session.execute(stmt)
         abonements = result.scalars().all()
@@ -146,7 +146,7 @@ class Database:
         stmt = (
             select(TgAbonement)
             .join(TgAbonementUser)
-            .where(TgAbonementUser.user_id == user.id, TgAbonement.hidden == False)
+            .where(TgAbonementUser.user_id == user.id, not_(TgAbonement.hidden))
         )
         result = await self.session.execute(stmt)
         abonements = result.scalars().all()

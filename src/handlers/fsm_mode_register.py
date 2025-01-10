@@ -28,7 +28,7 @@ async def process_register_command(message: Message, state: FSMContext) -> None:
 # Command /cancel in register state
 @router.message(
     StateFilter(RegisterGroup),
-    or_f(Command("cancel"), F.text.in_([cmd["go_home"], cmd["disagree"], cmd["exit"]])),
+    or_f(Command("cancel"), F.text.in_([cmd["disagree"], cmd["exit"]])),
 )
 async def process_cancel_command(
     message: Message, state: FSMContext, user_type: list[str]

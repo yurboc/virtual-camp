@@ -24,7 +24,6 @@ user_types: dict[str, str] = {
 # Commands
 cmd: dict[str, str] = {
     # Common buttons
-    "go_home": "🏠 В начало",
     "exit": "🚪 Выход",
     # Main menu buttons
     "register": "🗝 Регистрация",
