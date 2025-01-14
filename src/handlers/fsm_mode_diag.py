@@ -27,11 +27,14 @@ router = Router(name=__name__)
 
 # Get Bot version
 def get_bot_version() -> str:
-    version = (
-        subprocess.check_output(["git", "describe", "--long", "--tags", "--always"])
-        .decode("utf-8")
-        .strip()
-    )
+    try:
+        version = (
+            subprocess.check_output(["git", "describe", "--long", "--tags", "--always"])
+            .decode("utf-8")
+            .strip()
+        )
+    except Exception:
+        version = "unknown"
     logger.info(f"Bot version: {version}")
     return version
 
