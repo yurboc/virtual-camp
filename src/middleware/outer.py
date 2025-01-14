@@ -54,11 +54,11 @@ class CheckUserType(BaseMiddleware):
         db: Database | None = data.get("db")
         tg_user = data.get("event_from_user")  # stored by built-in aiogram middleware
         if db and tg_user and tg_user.id:
-            user = await db.get_or_create_user(tg_user=tg_user)
+            user = await db.user_get_or_create(tg_user=tg_user)
             if not user:
                 logger.warning(f"User {tg_user.id} not found in DB")
             else:
-                data["user_type"] = list(user.status.split())
+                data["user_type"] = db.user_get_groups(user)
                 data["user_tg_id"] = user.tg_id
                 data["user_id"] = user.id
                 logger.info(f"User {user.tg_id} ({user.id}) is {data['user_type']}")

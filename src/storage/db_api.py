@@ -87,24 +87,39 @@ class Database:
         return user
 
     # Get user status
-    async def get_or_create_user(
+    async def user_get_or_create(
         self, tg_user: Union[TelegramObject, User]
     ) -> Optional[TgUser]:
         user = (
             await self.user_by_tg_id(tg_user.id) if isinstance(tg_user, User) else None
         )
-        status = "unknown"
+        user_status = ["unknown"]
         if user:
-            status = user.status
+            user_status = self.user_get_groups(user)
         else:
-            status = "new_user"
+            user_status = ["new_user"]
             user = (
                 await self.user_add(tg_user=tg_user)
                 if isinstance(tg_user, User)
                 else None
             )
-        logger.info(f"User status is {status}")
+        logger.info(f"User status is {user_status}")
         return user
+
+    # Get user groups
+    def user_get_groups(self, user: TgUser) -> list[str]:
+        groups = user.status.split()
+        return groups
+
+    # User add to group
+    def user_add_to_group(self, user: TgUser, group: str) -> None:
+        groups = self.user_get_groups(user)
+        groups.append(group)
+        if "registered" in groups and group == "unregistered":
+            groups.remove("registered")
+        elif "unregistered" in groups and group == "registered":
+            groups.remove("unregistered")
+        user.status = " ".join(groups)
 
     # Create task
     async def task_add(self, task_uuid: str, user: TgUser) -> TgTask:
@@ -360,13 +375,7 @@ class Database:
         ):
             return False
         # Accept invite by user
-        groups = user.status.split()
-        groups.append(invite.group)
-        if "registered" in groups and invite.group == "unregistered":
-            groups.remove("registered")
-        elif "unregistered" in groups and invite.group == "registered":
-            groups.remove("unregistered")
-        user.status = " ".join(groups)
+        self.user_add_to_group(user, invite.group)
         # Accept invite
         invite_user = TgInviteUser(user_id=user_id, invite_id=invite.id)
         self.session.add(invite_user)

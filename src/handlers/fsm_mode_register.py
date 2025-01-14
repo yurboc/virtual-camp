@@ -110,7 +110,7 @@ async def process_name(
     user.tg_phone = user_data.get("phone")
     if user_data.get("name"):
         user.name = user_data.get("name")
-    user.status = "registered"
+    db.user_add_to_group(user, "registered")
     await db.user_update(user)
     await state.set_state(RegisterGroup.finish)
     await message.answer(text=msg["reg_done"], reply_markup=kb.go_home_kb)
