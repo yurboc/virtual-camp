@@ -277,18 +277,23 @@ async def callbacks_abonement_edit(
             **Text(
                 as_list(
                     msg["ab_edit_begin"],
+                    "",
+                    msg["ab_name_label"],
                     Bold(abonement.name),
-                    Italic(abonement.description if abonement.description else ""),
-                    as_key_value(
-                        msg["ab_total_visits"],
-                        (
-                            abonement.total_visits
-                            if abonement.total_visits
-                            else Italic(msg["ab_unlim_visits"])
-                        ),
+                    "",
+                    msg["ab_descr_label"],
+                    Italic(
+                        abonement.description if abonement.description else msg["empty"]
                     ),
                     "",
-                    Bold(msg["ab_new_name"]),
+                    msg["ab_visits_label"],
+                    Bold(
+                        abonement.total_visits
+                        if abonement.total_visits
+                        else msg["ab_unlim_visits"]
+                    ),
+                    "",
+                    Bold(msg["ab_edit_name"]),
                 )
             ).as_kwargs(),
             reply_markup=kb.empty_kb,
