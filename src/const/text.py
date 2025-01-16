@@ -68,6 +68,7 @@ msg: dict[str, str] = {
     # General messages
     "hello_bot": "Вас приветствует бот Virtual Camp!",
     "main_menu": "Вы в главном меню",
+    "main_menu_exit": "Вы вышли в главное меню",
     "help": "Отправьте /help для справки",
     "cancel": "Отправьте /cancel для выхода",
     "start": "Отправьте /start для начала работы",
@@ -76,6 +77,7 @@ msg: dict[str, str] = {
     "failure": "Обнаружен сбой. Отправьте /start",
     "unavailable": "информация недоступна",
     "err_params": "Параметры распознать не удалось",
+    "err_start_token": "Обработка ключа в сообщении не поддерживается",
     "uuid_format": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
     # Access control
     "no_access": "⛔️ Ошибка доступа. Возврат в главное меню",
@@ -87,11 +89,12 @@ msg: dict[str, str] = {
     "ab_wrong_owner": "Нельзя присоединиться к своему абонементу",
     "ab_err_joined": "Вы уже присоединены к этому абонементу",
     "ab_joined": "Вы успешно присоединились к абонементу",
+    "ab_err_unknown": "Не получилось присоединиться к абонементу",
     # Deep linking: Invite user
     "invite_err_key": "Неверный ключ приглашения",
     "invite_err_joined": "Вы уже имеете эти права",
     "invite_err_unknown": "Не получилось использовали приглашение",
-    "invite_ok": "Вы успешно использовали приглашение",
+    "invite_ok": "Приглашение принято. Отправьте /start",
     # Abonement: top-level menu
     "abonement_main": "Работа с абонементами. Выберите действие",
     "abonement_done": "Завершение работы с абонементами. Вы в главном меню",
@@ -189,6 +192,7 @@ help: dict[str, str] = {
     "my_cmd": "Вам доступны режимы",
     "my_diag": "/diag - диагностика бота",
     "my_register": "/register - регистрация пользователя",
+    "my_register_edit": "/register - изменение данных пользователя",
     "my_invite": "/invite - создание и просмотр приглашений",
     "my_tables": "/tables - генерация таблиц ФСТ-ОТМ",
     "my_pictures": "/pictures - генерация обложек YouTube",

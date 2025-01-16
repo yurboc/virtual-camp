@@ -181,6 +181,7 @@ class Database:
             token=abonement_uuid,
             total_visits=total_visits,
             description=description,
+            hidden=False,
             owner=owner,
         )
         self.session.add(abonement)

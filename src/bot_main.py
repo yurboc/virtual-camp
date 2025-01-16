@@ -12,13 +12,12 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from middleware.outer import DatabaseMiddleware, StoreAllUpdates, CheckUserType
 from middleware.inner import StoreAllMessages
 from handlers import (
-    deep_link_handlers,
-    fsm_main_handlers,
-    fsm_mode_invites,
-    fsm_mode_pictures,
+    start_handlers,
     other_handlers,
     fsm_mode_diag,
     fsm_mode_register,
+    fsm_mode_invites,
+    fsm_mode_pictures,
     fsm_mode_generator,
     fsm_mode_abonement,
     fsm_mode_abonement_cb,
@@ -73,16 +72,15 @@ async def async_main() -> None:
     dp = Dispatcher(storage=storage, engine=async_engine)
 
     # Add routers
-    dp.include_router(fsm_mode_diag.router)  # Diag mode (always first)
-    dp.include_router(deep_link_handlers.router)  # Deep links (always second)
+    dp.include_router(start_handlers.router)  # START and deep-linking
+    dp.include_router(fsm_mode_diag.router)  # Diag mode
     dp.include_router(fsm_mode_register.router)  # Register user
     dp.include_router(fsm_mode_invites.router)  # Invite user
     dp.include_router(fsm_mode_generator.router)  # FST-OTM tables generator
     dp.include_router(fsm_mode_pictures.router)  # Picture  generation mode
     dp.include_router(fsm_mode_abonement_cb.router)  # Abonement: callbacks
     dp.include_router(fsm_mode_abonement.router)  # Abonement: messages
-    dp.include_router(fsm_main_handlers.router)  # Main menu (always pre-last)
-    dp.include_router(other_handlers.router)  # Other messages (always last)
+    dp.include_router(other_handlers.router)  # Other messages
 
     # Add middleware
     dp.update.outer_middleware(DatabaseMiddleware(session=async_session))

@@ -9,7 +9,10 @@ def generate_top_level_help(user_type: list[str] = ["unknown"]) -> Text:
     tokens.append(Text(help["all_help"]))
     tokens.append(Text(help["all_cancel"]))
     tokens.append(Bold(help["my_cmd"]))
-    tokens.append(Text(help["my_register"]))
+    if "registered" in user_type:
+        tokens.append(Text(help["my_register_edit"]))
+    else:
+        tokens.append(Text(help["my_register"]))
     tokens.append(Text(help["my_abonement"]))
     if "developer" in user_type:
         tokens.append(Text(help["my_diag"]))

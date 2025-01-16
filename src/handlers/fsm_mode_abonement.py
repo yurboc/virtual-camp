@@ -219,6 +219,7 @@ async def process_good_description_abonement_command(
     if not user or not abonement_name or total_visits is None:
         logger.warning(f"FSM: abonement: user {user_id} not found or wrong state")
         return
+    # Save UPDATED Abonement
     if abonement_id:
         abonement = await db.abonement_edit(
             abonement_id=abonement_id,
@@ -233,6 +234,7 @@ async def process_good_description_abonement_command(
             logger.warning(
                 f"FSM: abonement: can't update {abonement_id} for user {user_id}"
             )
+    # Save NEW Abonement
     else:
         abonement = await db.abonement_create(
             name=abonement_name,
