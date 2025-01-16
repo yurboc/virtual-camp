@@ -147,12 +147,12 @@ msg: dict[str, str] = {
     "ab_join_no": "Не присоединились к абонементу",
     "ab_failure_callback": "Неверный ключ абонемента. Введите /cancel для выхода",
     # Diag mode messages
-    "diag_main": "Режим диагностики: /info - подробная информация, выход по /cancel",
+    "diag_main": "Режим диагностики включен",
     "diag_sys_info": "Информация о системе",
     "diag_version": "Версия",
     "diag_bot_info": "Информация о пользователе в aiogram",
     "diag_db_info": "Информация о пользователе в БД",
-    "diag_any_msg": "Расшифровка, выход по команде /cancel",
+    "diag_any_msg": "Расшифровка",
     "diag_cancel": "Завершение диагностики. Вы в главном меню",
     # Registration mode messages
     "reg_main": "Регистрация нового пользователя",

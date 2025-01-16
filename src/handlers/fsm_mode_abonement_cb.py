@@ -5,14 +5,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.filters import StateFilter
 from aiogram.filters import or_f
 from aiogram.fsm.context import FSMContext
-from aiogram.utils.formatting import (
-    Text,
-    Bold,
-    Italic,
-    TextLink,
-    as_list,
-    as_key_value,
-)
+from aiogram.utils.formatting import Text, Bold, Italic, TextLink, as_list
 from aiogram.utils.deep_linking import create_start_link
 from const.states import MainGroup, AbonementGroup
 from keyboards.common import AbonementCallbackFactory
