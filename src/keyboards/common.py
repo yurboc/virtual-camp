@@ -249,13 +249,13 @@ go_home_kb = ReplyKeyboardMarkup(
 )
 
 # YES-NO KEYBOARD
-yes_no_keyboard = ReplyKeyboardMarkup(
+yes_no_kb = ReplyKeyboardMarkup(
     keyboard=[[KeyboardButton(text=cmd["yes"]), KeyboardButton(text=cmd["no"])]],
     resize_keyboard=True,
 )
 
 # AGREEMENT KEYBOARD
-agreement_keyboard = ReplyKeyboardMarkup(
+agreement_kb = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text=cmd["agree"]), KeyboardButton(text=cmd["disagree"])]
     ],
@@ -263,11 +263,11 @@ agreement_keyboard = ReplyKeyboardMarkup(
 )
 
 # GET CONTACT KEYBOARD
-get_contact_keyboard = ReplyKeyboardMarkup(
+get_contact_kb = ReplyKeyboardMarkup(
     keyboard=[[KeyboardButton(text=cmd["share_phone"], request_contact=True)]],
     one_time_keyboard=True,
     resize_keyboard=True,
 )
 
 # NO KEYBOARD
-no_keyboard = ReplyKeyboardRemove()
+empty_kb = ReplyKeyboardRemove()

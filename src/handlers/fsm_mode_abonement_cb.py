@@ -291,7 +291,7 @@ async def callbacks_abonement_edit(
                     Bold(msg["ab_new_name"]),
                 )
             ).as_kwargs(),
-            reply_markup=kb.no_keyboard,
+            reply_markup=kb.empty_kb,
         )
 
 
@@ -328,5 +328,5 @@ async def callbacks_abonement_delete(
         await state.set_state(AbonementGroup.delete)
         await callback.message.answer(
             **ab_del_ask(user.id == abonement.owner_id, abonement.name).as_kwargs(),
-            reply_markup=kb.no_keyboard,
+            reply_markup=kb.empty_kb,
         )

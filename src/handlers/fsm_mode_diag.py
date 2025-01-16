@@ -46,7 +46,7 @@ def get_bot_version() -> str:
 async def process_diag_command(message: Message, state: FSMContext) -> None:
     logger.info("FSM: diag: entering diag mode")
     await state.set_state(MainGroup.diag_mode)
-    await message.answer(text=msg["diag_main"], reply_markup=kb.no_keyboard)
+    await message.answer(text=msg["diag_main"], reply_markup=kb.empty_kb)
 
 
 # Command /help in diag state
@@ -112,7 +112,7 @@ async def process_info_command(
     # Send message
     await message.answer(
         **content.as_kwargs(),
-        reply_markup=kb.no_keyboard,
+        reply_markup=kb.empty_kb,
     )
 
 
@@ -126,5 +126,5 @@ async def process_any_message(message: Message) -> None:
     )
     await message.answer(
         **content.as_kwargs(),
-        reply_markup=kb.no_keyboard,
+        reply_markup=kb.empty_kb,
     )

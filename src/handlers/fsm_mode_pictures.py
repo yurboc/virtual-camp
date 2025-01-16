@@ -132,7 +132,7 @@ async def process_selected_picture(message: Message, state: FSMContext) -> None:
         return
     await state.update_data({"picture": picture})
     await state.set_state(PicturesGroup.text)
-    await message.answer(msg["pictures_text"], reply_markup=kb.no_keyboard)
+    await message.answer(msg["pictures_text"], reply_markup=kb.empty_kb)
 
 
 # Add text for Picture

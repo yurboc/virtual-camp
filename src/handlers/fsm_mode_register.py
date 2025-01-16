@@ -9,7 +9,16 @@ from aiogram.fsm.state import default_state
 from aiogram.utils.formatting import Bold, as_list
 from const.states import RegisterGroup
 from storage.db_api import Database
-from const.text import cmd, msg, help, reg_main, reg_end, reg_phone, reg_name
+from const.text import (
+    cmd,
+    msg,
+    help,
+    reg_main,
+    reg_main_edit,
+    reg_end,
+    reg_phone,
+    reg_name,
+)
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)
@@ -19,10 +28,15 @@ router = Router(name=__name__)
 @router.message(
     StateFilter(default_state), or_f(Command("register"), F.text == cmd["register"])
 )
-async def process_register_command(message: Message, state: FSMContext) -> None:
+async def process_register_command(
+    message: Message, state: FSMContext, user_type: list[str]
+) -> None:
     logger.info("FSM: register: entering register mode")
     await state.set_state(RegisterGroup.agreement)
-    await message.answer(**reg_main.as_kwargs(), reply_markup=kb.agreement_keyboard)
+    if "registered" in user_type:
+        await message.answer(**reg_main_edit.as_kwargs(), reply_markup=kb.agreement_kb)
+    else:
+        await message.answer(**reg_main.as_kwargs(), reply_markup=kb.agreement_kb)
 
 
 # Command /cancel in register state
@@ -52,14 +66,14 @@ async def process_help_command(message: Message):
 async def process_agreement(message: Message, state: FSMContext) -> None:
     logger.info("FSM: register: agreement")
     await state.set_state(RegisterGroup.phone)
-    await message.answer(**reg_phone.as_kwargs(), reply_markup=kb.get_contact_keyboard)
+    await message.answer(**reg_phone.as_kwargs(), reply_markup=kb.get_contact_kb)
 
 
 # Wrong agreement
 @router.message(StateFilter(RegisterGroup.agreement))
 async def process_disagreement(message: Message, state: FSMContext) -> None:
     logger.info("FSM: register: disagreement")
-    await message.answer(text=msg["reg_no_agree"], reply_markup=kb.agreement_keyboard)
+    await message.answer(text=msg["reg_no_agree"], reply_markup=kb.agreement_kb)
 
 
 # Got phone number
@@ -81,7 +95,7 @@ async def process_phone(
     await state.update_data(name=currentName)
     await message.answer(
         **reg_name(currentName).as_kwargs(),
-        reply_markup=kb.no_keyboard,
+        reply_markup=kb.empty_kb,
     )
 
 
@@ -89,7 +103,7 @@ async def process_phone(
 @router.message(StateFilter(RegisterGroup.phone))
 async def process_wrong_phone(message: Message, state: FSMContext) -> None:
     logger.info("FSM: register: wrong phone")
-    await message.answer(text=msg["reg_no_phone"], reply_markup=kb.get_contact_keyboard)
+    await message.answer(text=msg["reg_no_phone"], reply_markup=kb.get_contact_kb)
 
 
 # Got name

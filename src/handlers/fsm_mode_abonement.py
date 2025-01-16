@@ -102,7 +102,7 @@ async def process_my_abonements_command(
     if my_list or other_list:
         await message.answer(
             **as_key_value(msg["ab_list_count"], len(my) + len(other)).as_kwargs(),
-            reply_markup=kb.no_keyboard,
+            reply_markup=kb.empty_kb,
         )
         nodes: list[Text] = list()
         if my_list:
@@ -133,7 +133,7 @@ async def process_add_abonement_command(message: Message, state: FSMContext) -> 
     # Ask Abonement name
     await message.answer(
         **as_list(Bold(msg["ab_new_name"]), msg["ab_new_name_format"]).as_kwargs(),
-        reply_markup=kb.no_keyboard,
+        reply_markup=kb.empty_kb,
     )
 
 
@@ -309,7 +309,7 @@ async def process_join_abonement_command(message: Message, state: FSMContext) ->
     await state.set_state(AbonementGroup.join)
     await message.answer(
         **as_list(msg["ab_join_begin"], Bold(msg["ab_join_key"])).as_kwargs(),
-        reply_markup=kb.no_keyboard,
+        reply_markup=kb.empty_kb,
     )
 
 
@@ -357,7 +357,7 @@ async def process_good_key_join_abonement_command(
     await state.set_state(AbonementGroup.accept)
     await message.answer(
         **as_list(msg["ab_join_ask"], Bold(abonement.name)).as_kwargs(),
-        reply_markup=kb.yes_no_keyboard,
+        reply_markup=kb.yes_no_kb,
     )
 
 
