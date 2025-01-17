@@ -54,7 +54,7 @@ def get_rabbitmq_queues_status(
         for queue in queues:
             result.append(
                 f"{queue['name']:<15}: {queue.get('state', 'unknown')},"
-                " messages={queue['messages']}, consumers={queue['consumers']}"
+                f" messages={queue['messages']}, consumers={queue['consumers']}"
             )
     except requests.exceptions.RequestException as e:
         logger.warning(f"Error connecting to RabbitMQ: {e}")
