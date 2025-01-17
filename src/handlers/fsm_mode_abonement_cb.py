@@ -86,10 +86,38 @@ async def callbacks_abonement_reject_visit(
         )
 
 
-# Visit Abonement
+# Ask to visit Abonement
 @router.callback_query(
     StateFilter(AbonementGroup.open),
-    AbonementCallbackFactory.filter(F.action == "visit"),
+    AbonementCallbackFactory.filter(F.action == "ask_visit"),
+)
+async def callbacks_abonement_ask_visit(
+    callback: CallbackQuery,
+    callback_data: AbonementCallbackFactory,
+    state: FSMContext,
+    db: Database,
+):
+    logger.info("Abonement visit ask: %s", callback_data.id)
+    await callback.answer()
+    abonement = await db.abonement_by_id(callback_data.id)
+    if not abonement or abonement.token != callback_data.token:
+        if callback.message and isinstance(callback.message, Message):
+            await callback.message.answer(msg["ab_failure_callback"])
+        return
+    if callback.message and isinstance(callback.message, Message):
+        await callback.message.edit_reply_markup(None)
+        await state.set_state(AbonementGroup.visit)
+        result = [msg["ab_visit_ask"], Bold(abonement.name), msg["ab_visit_confirm"]]
+        await callback.message.answer(
+            **as_list(*result).as_kwargs(),
+            reply_markup=kb.get_abonement_yes_no_kb(abonement),
+        )
+
+
+# Visit Abonement
+@router.callback_query(
+    StateFilter(AbonementGroup.visit),
+    AbonementCallbackFactory.filter(F.action.in_(["yes", "no"])),
 )
 async def callbacks_abonement_accept_visit(
     callback: CallbackQuery,
@@ -97,8 +125,20 @@ async def callbacks_abonement_accept_visit(
     state: FSMContext,
     db: Database,
 ):
-    logger.info("Abonement visiting: %s", callback_data.id)
+    logger.info("Abonement visit confirm: %s", callback_data.id)
     await callback.answer()
+    await state.set_state(MainGroup.abonement_mode)
+    # Answer NO
+    if callback_data.action == "no":
+        logger.info("Abonement visit canceled: %s", callback_data.id)
+        if callback.message and isinstance(callback.message, Message):
+            await callback.message.edit_reply_markup(None)
+            await callback.message.answer(
+                msg["ab_no_visit"], reply_markup=kb.get_abonement_kb()
+            )
+        return
+    # Answer YES
+    logger.info("Abonement visit accepted: %s", callback_data.id)
     abonement = await db.abonement_by_id(callback_data.id)
     user = await db.user_by_tg_id(callback.from_user.id)
     if not abonement or abonement.token != callback_data.token or not user:
@@ -107,17 +147,13 @@ async def callbacks_abonement_accept_visit(
         return
     abonement_visit = await db.abonement_visit_add(abonement.id, user.id)
     if callback.message and isinstance(callback.message, Message):
-        await callback.message.edit_reply_markup(None)
-        await state.set_state(MainGroup.abonement_mode)
-        if abonement_visit:
-            # Visit DONE
+        if abonement_visit:  # Visit DONE
             result = [msg["ab_visit"], Bold(abonement_visit.ts.strftime(ab_date_fmt))]
-        else:
-            # Visit FAILED (Abonement empty or deleted)
+        else:  # Visit FAILED (Abonement empty or deleted)
             result = [msg["ab_no_visit"], Bold(msg["ab_empty"])]
+        await callback.message.edit_reply_markup(None)
         await callback.message.answer(
-            **as_list(*result).as_kwargs(),
-            reply_markup=kb.get_abonement_kb(),
+            **as_list(*result).as_kwargs(), reply_markup=kb.get_abonement_kb()
         )
 
 

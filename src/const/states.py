@@ -39,4 +39,5 @@ class AbonementGroup(StatesGroup):
     join = State()
     accept = State()
     open = State()
+    visit = State()
     delete = State()

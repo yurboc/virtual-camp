@@ -1,6 +1,6 @@
 from typing import Optional, Sequence
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
-from aiogram.types import InlineKeyboardMarkup
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from aiogram.filters.callback_data import CallbackData
 from storage.db_schema import TgAbonement
@@ -161,7 +161,7 @@ def get_abonement_control_kb(
     builder.button(
         text=(cmd["plus_visit"] if abonement.total_visits == 0 else cmd["minus_visit"]),
         callback_data=AbonementCallbackFactory(
-            id=abonement.id, token=abonement.token, action="visit"
+            id=abonement.id, token=abonement.token, action="ask_visit"
         ),
     )
     builder.button(
@@ -209,9 +209,7 @@ def get_abonement_control_kb(
 # ABONEMENT HISTORY MENU
 def get_abonement_history_kb(
     abonement: TgAbonement, offset: int = 0, limit: int = 0, total: int = 0
-) -> Optional[InlineKeyboardMarkup]:
-    if not abonement:
-        return None
+) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(
         text=cmd["back"],
@@ -240,6 +238,25 @@ def get_abonement_history_kb(
         ),
     )
     builder.adjust(4)
+    return builder.as_markup()
+
+
+# ABONEMENT YES-NO KEYBOARD
+def get_abonement_yes_no_kb(abonement: TgAbonement) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text=cmd["yes"],
+        callback_data=AbonementCallbackFactory(
+            id=abonement.id, token=abonement.token, action="yes"
+        ),
+    )
+    builder.button(
+        text=cmd["no"],
+        callback_data=AbonementCallbackFactory(
+            id=abonement.id, token=abonement.token, action="no"
+        ),
+    )
+    builder.adjust(2)
     return builder.as_markup()
 
 
