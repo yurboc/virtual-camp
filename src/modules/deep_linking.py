@@ -41,6 +41,6 @@ async def handle_invite(token: str, db: Database, user_id: int, user_type: list[
     # Add user to priveleged group
     res = await db.invite_accept(user_id=user_id, invite=invite)
     if res:
-        return True, Text(msg["invite_ok"])
+        return True, as_list(msg["invite_ok"], msg["start"])
     else:
         return False, Text(msg["invite_err_unknown"])

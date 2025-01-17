@@ -81,7 +81,7 @@ async def callbacks_abonement_reject_visit(
         await callback.message.edit_reply_markup(None)
         await state.set_state(MainGroup.abonement_mode)
         await callback.message.answer(
-            msg["ab_no_visit"],
+            msg["abonement_main"],
             reply_markup=kb.get_abonement_kb(),
         )
 
@@ -276,7 +276,7 @@ async def callbacks_abonement_edit(
                     "",
                     msg["ab_descr_label"],
                     Italic(
-                        abonement.description if abonement.description else msg["empty"]
+                        abonement.description if abonement.description else msg["none"]
                     ),
                     "",
                     msg["ab_visits_label"],
