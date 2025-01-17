@@ -51,6 +51,7 @@ async def callbacks_abonement_open(
             **ab_info(
                 abonement.name,
                 abonement.description,
+                abonement.expiry_date,
                 abonement.total_visits,
                 visits_count,
                 my_visits_count,

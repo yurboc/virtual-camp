@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from datetime import datetime
 from typing import Optional
 from aiogram.utils.formatting import (
     Text,
@@ -127,7 +128,7 @@ msg: dict[str, str] = {
     "ab_name_label": "Название абонемента:",
     "ab_new_name": "Введите название абонемента",
     "ab_edit_name": "Введите новое название абонемента",
-    "ab_new_name_format": "Рекомендуемый формат: <Куда> до <дата> на <Владелец>",
+    "ab_new_name_format": "Рекомендуемый формат: <Куда> на <Владелец>",
     "ab_new_wrong_name": "Неверное название абонемента",
     "ab_visits_label": "Количество посещений:",
     "ab_new_visits": "Введите количество посещений",
@@ -294,14 +295,31 @@ reg_end: Text = as_list("Завершение регистрации.", "", "В�
 def ab_info(
     name: str,
     description: Optional[str],
+    expiry_date: Optional[datetime],
     total_visits: int,
     visits_count: int,
     my_visits_count: int,
 ) -> Text:
+    days = expiry_date.date() - datetime.now().date() if expiry_date else None
+    days_left = days.days + 1 if days is not None else None
+    days_left_str = ""
+    if days_left is not None:
+        if days_left > 1:
+            days_left_str = f"Дней осталось: {days_left}"
+        elif days_left == 1:
+            days_left_str = "Сегодня последний день"
+        else:
+            days_left_str = "Просроченный"
     res = as_list(
         "Выбран абонемент",
         Bold(name),
         *[Italic(description), ""] if description else [""],
+        *(
+            [f"До {expiry_date.strftime(ab_expiry_date_fmt)}"]
+            if expiry_date
+            else ["Без ограничения по сроку"]
+        ),
+        *([days_left_str, ""] if days_left_str else [""]),
         (
             f"На {total_visits} посещений"
             if total_visits != 0
