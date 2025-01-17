@@ -72,9 +72,14 @@ async def process_cancel_command(
 
 
 # Command /info in diag state
-@router.message(StateFilter(MainGroup.diag_mode), Command("info"))
+@router.message(Command("info"))
 async def process_info_command(
-    message: Message, db: Database, user_id: int, user_tg_id: int, user_type: list[str]
+    message: Message,
+    state: FSMContext,
+    db: Database,
+    user_id: int,
+    user_tg_id: int,
+    user_type: list[str],
 ) -> None:
     logger.info(f"FSM: diag: info command, user_id={user_id}, user_type={user_type}")
     # Get user info
@@ -87,11 +92,13 @@ async def process_info_command(
             access_list.append(Text(msg["m_no"], v))
     # Get bot info
     version = get_bot_version()
+    state_name = await state.get_state()
     # Create message
     content = as_list(
         as_marked_section(
             Bold(msg["diag_sys_info"]),
             as_key_value(msg["diag_version"], Code(version)),
+            as_key_value(msg["diag_state"], Code(state_name)),
         ),
         "",
         as_marked_section(

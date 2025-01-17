@@ -10,7 +10,7 @@ class MainGroup(StatesGroup):
 
 
 # FSM Invites group
-class InvitesGroup(StatesGroup):
+class InvitesGroup(MainGroup):
     begin = State()
     create = State()
     history = State()
@@ -18,13 +18,13 @@ class InvitesGroup(StatesGroup):
 
 
 # FSM Pictures group
-class PicturesGroup(StatesGroup):
+class PicturesGroup(MainGroup):
     background = State()
     text = State()
 
 
 # FSM Register group
-class RegisterGroup(StatesGroup):
+class RegisterGroup(MainGroup):
     agreement = State()
     phone = State()
     name = State()
@@ -32,7 +32,7 @@ class RegisterGroup(StatesGroup):
 
 
 # FSM Abonement group
-class AbonementGroup(StatesGroup):
+class AbonementGroup(MainGroup):
     name = State()
     total_visits = State()
     description = State()
