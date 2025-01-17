@@ -173,6 +173,7 @@ class Database:
         name: str,
         owner: TgUser,
         total_visits: int = 0,
+        expiry_date: Optional[datetime] = None,
         description: Optional[str] = None,
     ) -> TgAbonement:
         abonement_uuid = str(uuid.uuid4())
@@ -180,6 +181,7 @@ class Database:
             name=name,
             token=abonement_uuid,
             total_visits=total_visits,
+            expiry_date=expiry_date,
             description=description,
             hidden=False,
             owner=owner,
@@ -195,6 +197,7 @@ class Database:
         name: str,
         owner: TgUser,
         total_visits: int = 0,
+        expiry_date: Optional[datetime] = None,
         description: Optional[str] = None,
     ) -> Optional[TgAbonement]:
         abonement = await self.abonement_by_id(abonement_id)
@@ -202,6 +205,7 @@ class Database:
             return None
         abonement.name = name
         abonement.total_visits = total_visits
+        abonement.expiry_date = expiry_date
         abonement.description = description
         await self.session.commit()
         return abonement

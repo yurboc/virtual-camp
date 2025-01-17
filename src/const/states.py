@@ -35,6 +35,7 @@ class RegisterGroup(MainGroup):
 class AbonementGroup(MainGroup):
     name = State()
     total_visits = State()
+    expiry_date = State()
     description = State()
     join = State()
     accept = State()

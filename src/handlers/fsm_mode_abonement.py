@@ -17,10 +17,11 @@ from aiogram.utils.formatting import (
     as_marked_list,
 )
 from aiogram.utils.deep_linking import create_start_link
+from datetime import datetime
 from const.states import MainGroup, AbonementGroup
 from storage.db_api import Database
 from utils.config import config
-from const.text import cmd, msg, help, ab_del, re_uuid
+from const.text import cmd, msg, help, ab_del, re_uuid, ab_expiry_date_fmt
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)
@@ -186,10 +187,15 @@ async def process_good_visits_abonement_command(
         return
     # Save Abonement total visits
     await state.update_data(total_visits=total_visits)
-    await state.set_state(AbonementGroup.description)
-    # Ask about description
+    await state.set_state(AbonementGroup.expiry_date)
+    # Ask about expiry date
     await message.answer(
-        **as_list(Bold(msg["ab_new_descr"]), msg["ab_new_skip_descr"]).as_kwargs()
+        **as_list(
+            Text(msg["ab_new_expiry_date"], " ", msg["date_format"]),
+            as_key_value(msg["example"], datetime.now().strftime("%d.%m.%Y")),
+            Text(msg["ab_new_no_expiry_date"]),
+        ).as_kwargs(),
+        reply_markup=kb.empty_kb,
     )
 
 
@@ -200,8 +206,42 @@ async def process_wrong_visits_abonement_command(message: Message) -> None:
     await message.answer(msg["ab_wrong_visits"])
 
 
+# Add or Edit Abonement: GOOD expiry date
+@router.message(StateFilter(AbonementGroup.expiry_date), F.text)
+async def process_good_expiry_date_abonement_command(
+    message: Message, state: FSMContext
+) -> None:
+    logger.info("FSM: abonement: GOOD expiry date for abonement")
+    user_input = message.text
+    date = None
+    if not user_input:
+        logger.warning("FSM: abonement: no expiry date")
+        await message.answer(msg["ab_wrong_expiry_date"])
+        return
+    if user_input != "/none":
+        try:
+            date = datetime.strptime(user_input, ab_expiry_date_fmt)
+        except ValueError:
+            logger.warning("FSM: abonement: wrong expiry date")
+            await message.answer(msg["ab_wrong_expiry_date"])
+            return
+    await state.update_data(expiry_date=date.isoformat() if date else None)
+    await state.set_state(AbonementGroup.description)
+    await message.answer(
+        **as_list(msg["ab_new_descr"], msg["ab_new_skip_descr"]).as_kwargs(),
+        reply_markup=kb.empty_kb,
+    )
+
+
+# Add or Edit Abonement: WRONG expiry date
+@router.message(StateFilter(AbonementGroup.expiry_date))
+async def process_wrong_expiry_date_abonement_command(message: Message) -> None:
+    logger.info("FSM: abonement: WRONG expiry date for abonement")
+    await message.answer(msg["ab_wrong_expiry_date"])
+
+
 # Add or Edit Abonement: GOOD description
-@router.message(StateFilter(AbonementGroup.description), or_f(Command("skip"), F.text))
+@router.message(StateFilter(AbonementGroup.description), F.text)
 async def process_good_description_abonement_command(
     message: Message, state: FSMContext, user_id: int, db: Database
 ) -> None:
@@ -216,6 +256,8 @@ async def process_good_description_abonement_command(
     total_visits = (await state.get_data()).get("total_visits")
     description = (await state.get_data()).get("description")
     abonement_id = (await state.get_data()).get("abonement_id")
+    expiry_str = (await state.get_data()).get("expiry_date")
+    expiry_date = datetime.fromisoformat(expiry_str) if expiry_str else None
     if not user or not abonement_name or total_visits is None:
         logger.warning(f"FSM: abonement: user {user_id} not found or wrong state")
         return
@@ -226,6 +268,7 @@ async def process_good_description_abonement_command(
             name=abonement_name,
             owner=user,
             total_visits=total_visits,
+            expiry_date=expiry_date,
             description=description,
         )
         if abonement:
@@ -240,6 +283,7 @@ async def process_good_description_abonement_command(
             name=abonement_name,
             owner=user,
             total_visits=total_visits,
+            expiry_date=expiry_date,
             description=description,
         )
         if abonement:

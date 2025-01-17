@@ -75,6 +75,9 @@ msg: dict[str, str] = {
     "unknown": "Сообщение не распознано",
     "none": "отсутствует",
     "unavailable": "информация недоступна",
+    "example": "Пример",
+    "date_format": "ДД.ММ.ГГГГ",
+    "date_time_format": "ДД.ММ.ГГГГ ЧЧ:ММ",
     "uuid_format": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
     # General help
     "start": "Отправьте /start для начала работы",
@@ -130,6 +133,10 @@ msg: dict[str, str] = {
     "ab_new_visits": "Введите количество посещений",
     "ab_zero_visits": "Если посещения не отслеживаются, введите 0",
     "ab_wrong_visits": "Неверное количество посещений",
+    "ab_expiry_date_label": "Срок действия:",
+    "ab_new_expiry_date": "Введите срок действия абонемента в формате",
+    "ab_new_no_expiry_date": "/none - без ограничений по сроку",
+    "ab_wrong_expiry_date": "Неверный срок действия абонемента",
     "ab_descr_label": "Описание:",
     "ab_new_descr": "Введите описание абонемента",
     "ab_new_skip_descr": "/skip - не заполнять описание",
@@ -229,6 +236,7 @@ re_uuid: str = r"^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
 
 # Date format for Abonements and Visits
 ab_date_fmt: str = "%d.%m.%Y %H:%M"
+ab_expiry_date_fmt: str = "%d.%m.%Y"
 
 # Register new user: begin
 reg_main: Text = as_list(
