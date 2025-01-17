@@ -1,6 +1,7 @@
 import logging
 import subprocess
 import keyboards.common as kb
+import requests
 from aiogram import F, Router
 from aiogram.types import Message
 from aiogram.filters import Command, StateFilter
@@ -17,6 +18,7 @@ from aiogram.utils.formatting import (
     as_numbered_section,
     as_marked_section,
 )
+from requests.auth import HTTPBasicAuth
 from const.states import MainGroup
 from storage.db_api import Database
 from const.text import cmd, msg, help, user_types
@@ -37,6 +39,26 @@ def get_bot_version() -> str:
         version = "unknown"
     logger.info(f"Bot version: {version}")
     return version
+
+
+# Get RabbitMQ queues
+def get_rabbitmq_queues_status(
+    host="localhost", port="15672", username="guest", password="guest"
+) -> list[str]:
+    url = f"http://{host}:{port}/api/queues"
+    result = []
+    try:
+        response = requests.get(url, auth=HTTPBasicAuth(username, password))
+        response.raise_for_status()  # exception for status code 4xx and 5xx
+        queues = response.json()
+        for queue in queues:
+            result.append(
+                f"{queue['name']:<15}: {queue.get('state', 'unknown')},"
+                " messages={queue['messages']}, consumers={queue['consumers']}"
+            )
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"Error connecting to RabbitMQ: {e}")
+    return result
 
 
 # Entering diagnostic mode
@@ -115,6 +137,9 @@ async def process_info_command(
         "",
         Bold(msg["diag_db_info"]),
         Pre(user),
+        "",
+        Bold(msg["diag_rabbitmq_info"]),
+        Code(as_list(*get_rabbitmq_queues_status())),
     )
     # Send message
     await message.answer(

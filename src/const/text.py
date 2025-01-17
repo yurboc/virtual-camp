@@ -157,6 +157,7 @@ msg: dict[str, str] = {
     "diag_state": "Режим",
     "diag_bot_info": "Информация о пользователе в aiogram",
     "diag_db_info": "Информация о пользователе в БД",
+    "diag_rabbitmq_info": "Информация об очередях",
     "diag_any_msg": "Расшифровка",
     "diag_cancel": "Завершение диагностики. Вы в главном меню",
     # Registration mode messages
