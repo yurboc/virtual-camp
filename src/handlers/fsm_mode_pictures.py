@@ -153,9 +153,8 @@ async def process_text(
         await message.answer(msg["pictures_bad_text"])
         return
     # Create task
-    data = await state.get_data()
-    picture = data.get("picture")
-    output_type = data.get("output_type")
+    picture = await state.get_value("picture")
+    output_type = await state.get_value("output_type")
     task_uuid = str(uuid.uuid4())
     user = await db.user_by_id(user_id)
     if not user:

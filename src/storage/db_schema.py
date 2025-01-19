@@ -116,7 +116,7 @@ class TgAbonement(Base):
     token: Mapped[str] = mapped_column(String(60), index=True, unique=True)
     name: Mapped[str]
     total_visits: Mapped[int]
-    expiry_date: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=True)
+    expiry_date: Mapped[Optional[datetime.datetime]]
     description: Mapped[Optional[str]]
     hidden: Mapped[bool]
     create_ts: Mapped[datetime.datetime] = mapped_column(

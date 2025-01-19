@@ -77,15 +77,16 @@ msg: dict[str, str] = {
     "none": "отсутствует",
     "unavailable": "информация недоступна",
     "example": "Пример",
+    "current": "Текущее",
     "date_format": "ДД.ММ.ГГГГ",
     "date_time_format": "ДД.ММ.ГГГГ ЧЧ:ММ",
     "uuid_format": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
     # General help
-    "start": "Отправьте /start для начала работы",
-    "help": "Отправьте /help для справки",
-    "skip": "Отправьте /skip чтобы пропустить этот шаг",
-    "empty": "Отправьте /empty чтобы оставить пустым",
-    "cancel": "Отправьте /cancel для выхода",
+    "start": "/start - начало работы",
+    "help": "/help - показать справку",
+    "skip": "/skip - оставить без изменений",
+    "empty": "/empty - оставить пустым",
+    "cancel": "/cancel - отменить",
     # Access control
     "no_access": "⛔️ Ошибка доступа. Возврат в главное меню",
     "access_list": "Список прав доступа",
@@ -117,7 +118,7 @@ msg: dict[str, str] = {
     "ab_no_visit": "❌ Проход не записан",
     "ab_empty": "На абонементе не осталось проходов",
     "ab_total_visits": "Всего посещений",
-    "ab_unlim_visits": "без ограничений",
+    "ab_unlim": "без ограничений",
     "ab_key": "Ключ",
     "ab_link": "Ссылка для подключения:",
     "ab_ctrl_done": "Завершение работы с выбранным абонементом",
@@ -132,15 +133,15 @@ msg: dict[str, str] = {
     "ab_new_wrong_name": "Неверное название абонемента",
     "ab_visits_label": "Количество посещений:",
     "ab_new_visits": "Введите количество посещений",
-    "ab_zero_visits": "Если посещения не отслеживаются, введите 0",
+    "ab_zero_visits": "Чтобы не отслеживать посещения введите 0 или /empty",
     "ab_wrong_visits": "Неверное количество посещений",
     "ab_expiry_date_label": "Срок действия:",
     "ab_new_expiry_date": "Введите срок действия абонемента в формате",
-    "ab_new_no_expiry_date": "/none - без ограничений по сроку",
+    "ab_new_no_expiry_date": "/empty - без ограничений по сроку",
     "ab_wrong_expiry_date": "Неверный срок действия абонемента",
     "ab_descr_label": "Описание:",
     "ab_new_descr": "Введите описание абонемента",
-    "ab_new_skip_descr": "/skip - не заполнять описание",
+    "ab_new_empty_descr": "/empty - без описания",
     "ab_new_wrong_descr": "Описание абонемента не подходит",
     "ab_new_done": "Новый абонемент создан",
     "ab_edit_done": "Абонемент изменён",
@@ -235,9 +236,10 @@ help: dict[str, str] = {
 # Regular expression for UUID
 re_uuid: str = r"^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
 
-# Date format for Abonements and Visits
-ab_date_fmt: str = "%d.%m.%Y %H:%M"
-ab_expiry_date_fmt: str = "%d.%m.%Y"
+# Date and time formats
+date_fmt: str = "%d.%m.%Y"
+date_h_m_fmt: str = "%d.%m.%Y %H:%M"
+date_h_m_s_fmt: str = "%d.%m.%Y %H:%M:%S"
 
 # Register new user: begin
 reg_main: Text = as_list(
@@ -262,7 +264,7 @@ reg_main_edit: Text = as_list(
         "Своё имя (будет видно пользователям)",
     ),
     "",
-    "Любое из полей можно пропустить командой /skip",
+    msg["skip"],
 )
 
 # Register new user: ask phone
@@ -282,7 +284,7 @@ def reg_name(currentName: Optional[str]) -> Text:
         Bold("Введите имя"),
         "Это имя будет видно другим пользователям.",
         as_key_value("Текущее имя", currentName) if currentName else "",
-        "Чтобы оставить текущее имя без изменений, отправьте /skip",
+        msg["skip"],
     )
     return res
 
@@ -314,16 +316,16 @@ def ab_info(
         "Выбран абонемент",
         Bold(name),
         *[Italic(description), ""] if description else [""],
-        *(
-            [f"До {expiry_date.strftime(ab_expiry_date_fmt)}"]
+        (
+            f"До {expiry_date.strftime(date_fmt)}"
             if expiry_date
-            else ["Без ограничения по сроку"]
+            else Text(msg["ab_expiry_date_label"], " ", msg["ab_unlim"])
         ),
         *([days_left_str, ""] if days_left_str else [""]),
         (
             f"На {total_visits} посещений"
             if total_visits != 0
-            else "Без ограничения посещений"
+            else Text(msg["ab_visits_label"], " ", msg["ab_unlim"])
         ),
         as_key_value("Совершено проходов", visits_count),
         as_key_value("Из них мои проходы", my_visits_count),

@@ -12,7 +12,7 @@ from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.formatting import Bold, Code, as_list, as_key_value
 from storage.db_api import Database
 from const.states import InvitesGroup
-from const.text import cmd, msg, help, user_types
+from const.text import cmd, msg, help, user_types, date_h_m_s_fmt
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)
@@ -132,7 +132,7 @@ async def process_history_command(
             as_list(
                 "",
                 as_key_value(invite.group, user_types[invite.group]),
-                invite.ts_created.strftime("%d.%m.%Y %H:%M:%S"),
+                invite.ts_created.strftime(date_h_m_s_fmt),
                 Code(invite.token),
                 as_key_value(msg["invites_users"], len(users)),
             )

@@ -21,7 +21,7 @@ from datetime import datetime
 from const.states import MainGroup, AbonementGroup
 from storage.db_api import Database
 from utils.config import config
-from const.text import cmd, msg, help, ab_del, re_uuid, ab_expiry_date_fmt
+from const.text import cmd, msg, help, ab_del, re_uuid, date_fmt
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)
@@ -133,7 +133,9 @@ async def process_add_abonement_command(message: Message, state: FSMContext) -> 
     await state.set_state(AbonementGroup.name)
     # Ask Abonement name
     await message.answer(
-        **as_list(Bold(msg["ab_new_name"]), msg["ab_new_name_format"]).as_kwargs(),
+        **as_list(
+            Bold(msg["ab_new_name"]), msg["ab_new_name_format"], msg["cancel"]
+        ).as_kwargs(),
         reply_markup=kb.empty_kb,
     )
 
@@ -148,18 +150,25 @@ async def process_good_name_abonement_command(
     message: Message, state: FSMContext
 ) -> None:
     logger.info("FSM: abonement: GOOD NAME for abonement")
-    # Check Abonement name
-    name = message.text.strip() if message.text else None
-    if not name or not name.isprintable():
-        await message.answer(msg["ab_new_wrong_name"])
-        return
+    name = await state.get_value("name")
+    if message.text and message.text == "/skip" and name is not None:
+        logger.info("FSM: abonement: SKIP name for abonement")
+    else:
+        # Check Abonement name
+        name = message.text.strip() if message.text else None
+        if not name or not name.isprintable():
+            await message.answer(msg["ab_new_wrong_name"])
+            return
     # Save Abonement name
     await state.update_data(name=name)
     await state.set_state(AbonementGroup.total_visits)
     # Ask about total visits
-    await message.answer(
-        **as_list(Bold(msg["ab_new_visits"]), msg["ab_zero_visits"]).as_kwargs(),
-    )
+    tokens = [Bold(msg["ab_new_visits"]), Text(msg["ab_zero_visits"])]
+    if await state.get_value("abonement_id"):
+        total_visits = await state.get_value("total_visits")
+        tokens.append(as_key_value(msg["current"], total_visits))
+        tokens.append(Text(msg["skip"]))
+    await message.answer(**as_list(*tokens).as_kwargs(), reply_markup=kb.empty_kb)
 
 
 # Add or Edit Abonement: WRONG name
@@ -170,31 +179,48 @@ async def process_wrong_name_abonement_command(message: Message) -> None:
 
 
 # Add or Edit Abonement: GOOD total visits
-@router.message(StateFilter(AbonementGroup.total_visits), F.text.isdigit())
+@router.message(
+    StateFilter(AbonementGroup.total_visits),
+    or_f(Command("empty", "skip"), F.text.isdigit()),
+)
 async def process_good_visits_abonement_command(
     message: Message, state: FSMContext
 ) -> None:
     logger.info("FSM: abonement: GOOD total visits for abonement")
-    # Check Abonement total visits
-    total_visits = int(message.text) if message.text else 0
-    max_visits = config["BOT"]["ABONEMENTS"]["VISIT_COUNT_LIMIT"]
-    if total_visits > max_visits or total_visits < 0:
-        await message.answer(
-            **as_list(
-                f"{msg['ab_wrong_visits']}: 0..{max_visits}", msg["ab_zero_visits"]
-            ).as_kwargs()
-        )
-        return
+    total_visits = await state.get_value("total_visits")
+    if message.text == "/skip" and total_visits is not None:
+        logger.info("FSM: abonement: SKIP total visits for abonement")
+    else:
+        # Check Abonement total visits
+        if message.text == "/empty":
+            total_visits = 0
+        else:
+            total_visits = int(message.text) if message.text else 0
+        max_visits = config["BOT"]["ABONEMENTS"]["VISIT_COUNT_LIMIT"]
+        if total_visits > max_visits or total_visits < 0:
+            await message.answer(
+                **as_list(
+                    f"{msg['ab_wrong_visits']}: 0..{max_visits}", msg["ab_zero_visits"]
+                ).as_kwargs()
+            )
+            return
     # Save Abonement total visits
     await state.update_data(total_visits=total_visits)
     await state.set_state(AbonementGroup.expiry_date)
     # Ask about expiry date
+    tokens = [
+        Text(msg["ab_new_expiry_date"], " ", msg["date_format"]),
+        as_key_value(msg["example"], datetime.now().strftime(date_fmt)),
+        Text(msg["ab_new_no_expiry_date"]),
+    ]
+    if await state.get_value("abonement_id"):
+        expiry_date_str = await state.get_value("expiry_date")
+        if expiry_date_str:
+            expiry_date = datetime.fromisoformat(expiry_date_str)
+            tokens.append(as_key_value(msg["current"], expiry_date.strftime(date_fmt)))
+        tokens.append(Text(msg["skip"]))
     await message.answer(
-        **as_list(
-            Text(msg["ab_new_expiry_date"], " ", msg["date_format"]),
-            as_key_value(msg["example"], datetime.now().strftime("%d.%m.%Y")),
-            Text(msg["ab_new_no_expiry_date"]),
-        ).as_kwargs(),
+        **as_list(*tokens).as_kwargs(),
         reply_markup=kb.empty_kb,
     )
 
@@ -207,28 +233,48 @@ async def process_wrong_visits_abonement_command(message: Message) -> None:
 
 
 # Add or Edit Abonement: GOOD expiry date
-@router.message(StateFilter(AbonementGroup.expiry_date), F.text)
+@router.message(
+    StateFilter(AbonementGroup.expiry_date), or_f(Command("empty", "skip"), F.text)
+)
 async def process_good_expiry_date_abonement_command(
     message: Message, state: FSMContext
 ) -> None:
     logger.info("FSM: abonement: GOOD expiry date for abonement")
-    user_input = message.text
-    date = None
-    if not user_input:
-        logger.warning("FSM: abonement: no expiry date")
-        await message.answer(msg["ab_wrong_expiry_date"])
-        return
-    if user_input != "/none":
-        try:
-            date = datetime.strptime(user_input, ab_expiry_date_fmt)
-        except ValueError:
-            logger.warning("FSM: abonement: wrong expiry date")
+    expiry_date_str = await state.get_value("expiry_date")
+    expiry_date = datetime.fromisoformat(expiry_date_str) if expiry_date_str else None
+    if message.text == "/skip":
+        logger.info("FSM: abonement: SKIP expiry date for abonement")
+    else:
+        # Check Abonement expiry date
+        user_input = message.text
+        expiry_date = None
+        if not user_input:
+            logger.warning("FSM: abonement: no expiry date")
             await message.answer(msg["ab_wrong_expiry_date"])
             return
-    await state.update_data(expiry_date=date.isoformat() if date else None)
+        if user_input != "/empty":
+            try:
+                expiry_date = datetime.strptime(user_input, date_fmt)
+            except ValueError:
+                logger.warning("FSM: abonement: wrong expiry date")
+                await message.answer(msg["ab_wrong_expiry_date"])
+                return
+    # Save Abonement expiry date
+    await state.update_data(
+        expiry_date=expiry_date.isoformat() if expiry_date else None
+    )
     await state.set_state(AbonementGroup.description)
+    # Ask about description
+    tokens = [
+        Text(msg["ab_new_descr"]),
+        Text(msg["ab_new_empty_descr"]),
+    ]
+    if await state.get_value("abonement_id"):
+        description = await state.get_value("description", msg["none"])
+        tokens.append(as_key_value(msg["current"], description))
+        tokens.append(Text(msg["skip"]))
     await message.answer(
-        **as_list(msg["ab_new_descr"], msg["ab_new_skip_descr"]).as_kwargs(),
+        **as_list(*tokens).as_kwargs(),
         reply_markup=kb.empty_kb,
     )
 
@@ -241,22 +287,27 @@ async def process_wrong_expiry_date_abonement_command(message: Message) -> None:
 
 
 # Add or Edit Abonement: GOOD description
-@router.message(StateFilter(AbonementGroup.description), F.text)
+@router.message(
+    StateFilter(AbonementGroup.description), or_f(Command("empty", "skip"), F.text)
+)
 async def process_good_description_abonement_command(
     message: Message, state: FSMContext, user_id: int, db: Database
 ) -> None:
     logger.info("FSM: abonement: GOOD description for abonement")
-    # Save Abonement
-    if message.text and message.text == "/skip":
-        await state.update_data(description=None)
-    elif message.text:
-        await state.update_data(description=message.text.strip())
+    if message.text == "/skip":
+        logger.info("FSM: abonement: SKIP description for abonement")
+    else:
+        # Check Abonement description
+        if message.text == "/empty":
+            await state.update_data(description=None)
+        elif message.text:
+            await state.update_data(description=message.text.strip())
     user = await db.user_by_id(user_id)
-    abonement_name = (await state.get_data()).get("name")
-    total_visits = (await state.get_data()).get("total_visits")
-    description = (await state.get_data()).get("description")
-    abonement_id = (await state.get_data()).get("abonement_id")
-    expiry_str = (await state.get_data()).get("expiry_date")
+    abonement_name = await state.get_value("name")
+    total_visits = await state.get_value("total_visits")
+    description = await state.get_value("description")
+    abonement_id = await state.get_value("abonement_id")
+    expiry_str = await state.get_value("expiry_date")
     expiry_date = datetime.fromisoformat(expiry_str) if expiry_str else None
     if not user or not abonement_name or total_visits is None:
         logger.warning(f"FSM: abonement: user {user_id} not found or wrong state")
@@ -304,12 +355,21 @@ async def process_good_description_abonement_command(
                 msg["ab_edit_done"],
                 Bold(abonement.name),
                 Italic(abonement.description) if abonement.description else "",
+                Text(
+                    Bold(msg["ab_expiry_date_label"]),
+                    " ",
+                    (
+                        abonement.expiry_date.strftime(date_fmt)
+                        if abonement.expiry_date
+                        else msg["ab_unlim"]
+                    ),
+                ),
                 as_key_value(
                     msg["ab_total_visits"],
                     (
                         abonement.total_visits
                         if abonement.total_visits
-                        else Italic(msg["ab_unlim_visits"])
+                        else Italic(msg["ab_unlim"])
                     ),
                 ),
                 as_key_value(msg["ab_key"], Code(key)),
@@ -340,7 +400,7 @@ async def process_good_description_abonement_command(
 async def process_wrong_description_abonement_command(message: Message) -> None:
     logger.info("FSM: abonement: WRONG description for abonement")
     await message.answer(
-        **as_list(msg["ab_new_wrong_descr"], msg["ab_new_skip_descr"]).as_kwargs()
+        **as_list(msg["ab_new_wrong_descr"], msg["ab_new_empty_descr"]).as_kwargs()
     )
 
 

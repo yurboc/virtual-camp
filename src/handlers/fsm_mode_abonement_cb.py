@@ -11,7 +11,14 @@ from const.states import MainGroup, AbonementGroup
 from keyboards.common import AbonementCallbackFactory
 from storage.db_api import Database
 from utils.config import config
-from const.text import msg, ab_info, ab_page, ab_del_ask, ab_date_fmt
+from const.text import (
+    msg,
+    ab_info,
+    ab_page,
+    ab_del_ask,
+    date_h_m_fmt,
+    date_fmt,
+)
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)
@@ -149,7 +156,7 @@ async def callbacks_abonement_accept_visit(
     abonement_visit = await db.abonement_visit_add(abonement.id, user.id)
     if callback.message and isinstance(callback.message, Message):
         if abonement_visit:  # Visit DONE
-            result = [msg["ab_visit"], Bold(abonement_visit.ts.strftime(ab_date_fmt))]
+            result = [msg["ab_visit"], Bold(abonement_visit.ts.strftime(date_h_m_fmt))]
         else:  # Visit FAILED (Abonement empty or deleted)
             result = [msg["ab_no_visit"], Bold(msg["ab_empty"])]
         await callback.message.edit_reply_markup(None)
@@ -179,10 +186,10 @@ async def callbacks_abonement_visits(
     if callback.message and isinstance(callback.message, Message):
         # Calculate pagination
         total = await db.abonement_visits_count(abonement.id)
-        limit = (await state.get_data()).get(
+        limit = await state.get_value(
             "limit", config["BOT"]["ABONEMENTS"]["PAGINATION_LIMIT"]
         )
-        offset = (await state.get_data()).get("offset", 0)
+        offset = await state.get_value("offset", 0)
         if callback_data.action == "prev":
             if offset == 0:
                 return
@@ -206,7 +213,7 @@ async def callbacks_abonement_visits(
         for visit in visits_list:
             visits_text += [
                 Text(
-                    visit.ts.strftime("%d.%m.%Y %H:%M"),
+                    visit.ts.strftime(date_h_m_fmt),
                     " ",
                     TextLink(visit.user.name, url=f"tg://user?id={visit.user.tg_id}"),
                     (
@@ -300,7 +307,17 @@ async def callbacks_abonement_edit(
         return
     if callback.message and isinstance(callback.message, Message):
         await callback.message.edit_reply_markup(None)
-        await state.update_data({"abonement_id": abonement.id})
+        await state.update_data(
+            {
+                "abonement_id": abonement.id,
+                "name": abonement.name,
+                "description": abonement.description,
+                "expiry_date": (
+                    abonement.expiry_date.isoformat() if abonement.expiry_date else None
+                ),
+                "total_visits": abonement.total_visits,
+            }
+        )
         await state.set_state(AbonementGroup.name)
         # Ask new Abonement name
         await callback.message.answer(
@@ -316,14 +333,23 @@ async def callbacks_abonement_edit(
                         abonement.description if abonement.description else msg["none"]
                     ),
                     "",
+                    msg["ab_expiry_date_label"],
+                    Bold(
+                        abonement.expiry_date.strftime(date_fmt)
+                        if abonement.expiry_date
+                        else msg["ab_unlim"]
+                    ),
+                    "",
                     msg["ab_visits_label"],
                     Bold(
                         abonement.total_visits
                         if abonement.total_visits
-                        else msg["ab_unlim_visits"]
+                        else msg["ab_unlim"]
                     ),
                     "",
                     Bold(msg["ab_edit_name"]),
+                    msg["skip"],
+                    msg["cancel"],
                 )
             ).as_kwargs(),
             reply_markup=kb.empty_kb,

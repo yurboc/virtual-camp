@@ -5,6 +5,7 @@ import apiclient.discovery
 from dateutil import parser
 from google.oauth2.service_account import Credentials
 from utils.config import config
+from const.text import date_h_m_s_fmt
 
 logger = logging.getLogger(__name__)
 
@@ -72,8 +73,8 @@ class TableConverter:
         self.docName = docInfo.get("name")
         modifiedTime = docInfo.get("modifiedTime")
         modifiedTimeParsed = parser.parse(modifiedTime)
-        self.lastUpdateDate = modifiedTimeParsed.strftime("%d.%m.%Y %H:%M:%S")
-        self.generationDate = datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")
+        self.lastUpdateDate = modifiedTimeParsed.strftime(date_h_m_s_fmt)
+        self.generationDate = datetime.datetime.now().strftime(date_h_m_s_fmt)
         # Write details to log
         logger.info(f"File name: {self.docName}")
         logger.info(f"Last update: {self.lastUpdateDate}")
