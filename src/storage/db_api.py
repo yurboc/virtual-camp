@@ -6,6 +6,7 @@ from aiogram.types import TelegramObject, User, Message
 from storage.db_schema import TgUpdate, TgMessage, TgUser, TgNotification, TgTask
 from storage.db_schema import TgAbonement, TgAbonementUser, TgAbonementVisit
 from storage.db_schema import TgInvite, TgInviteUser
+from storage.db_schema import TgSettings
 from sqlalchemy import select, not_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.expression import func
@@ -385,5 +386,42 @@ class Database:
         invite_user = TgInviteUser(user_id=user_id, invite_id=invite.id)
         self.session.add(invite_user)
         # Save changes
+        await self.session.commit()
+        return True
+
+    # Get settings
+    async def settings_value(self, user_id: int, key: str) -> Optional[str]:
+        stmt = select(TgSettings).where(
+            TgSettings.user_id == user_id, TgSettings.key == key
+        )
+        result = await self.session.execute(stmt)
+        setting = result.scalars().first()
+        return setting.value if setting else None
+
+    # Set settings
+    async def settings_set(self, user_id: int, key: str, value: str) -> bool:
+        stmt = select(TgSettings).where(
+            TgSettings.user_id == user_id, TgSettings.key == key
+        )
+        result = await self.session.execute(stmt)
+        setting = result.scalars().first()
+        if not setting:
+            setting = TgSettings(user_id=user_id, key=key, value=value)
+            self.session.add(setting)
+        else:
+            setting.value = value
+        await self.session.commit()
+        return True
+
+    # Delete settings
+    async def settings_delete(self, user_id: int, key: str) -> bool:
+        stmt = select(TgSettings).where(
+            TgSettings.user_id == user_id, TgSettings.key == key
+        )
+        result = await self.session.execute(stmt)
+        setting = result.scalars().first()
+        if not setting:
+            return False
+        await self.session.delete(setting)
         await self.session.commit()
         return True

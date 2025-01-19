@@ -72,6 +72,9 @@ class TgUser(Base):
     abonement_visits: Mapped[List["TgAbonementVisit"]] = relationship(
         "TgAbonementVisit", back_populates="user"
     )
+    settings: Mapped[List["TgSettings"]] = relationship(
+        "TgSettings", back_populates="user"
+    )
 
     def __repr__(self) -> str:
         return (
@@ -195,3 +198,12 @@ class TgInviteUser(Base):
         nullable=False,
         server_default=func.CURRENT_TIMESTAMP(),
     )
+
+
+class TgSettings(Base):
+    __tablename__ = "tg_settings"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, unique=True)
+    key: Mapped[str] = mapped_column(String(60))
+    value: Mapped[str] = mapped_column(String(60))
+    user: Mapped[TgUser] = relationship("TgUser", back_populates="settings")
+    user_id: Mapped[int] = mapped_column(ForeignKey("tg_users.id"))

@@ -10,7 +10,7 @@ from aiogram.filters import Command, StateFilter
 from aiogram.filters import or_f
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
-from aiogram.utils.formatting import Bold, as_list, as_key_value
+from aiogram.utils.formatting import Text, Bold, as_list, as_key_value
 from const.states import PicturesGroup
 from const.text import cmd, msg, help
 from storage.db_api import Database
@@ -77,7 +77,12 @@ async def process_cancel_command(
 async def process_help_command(message: Message) -> None:
     logger.info("FSM: pictures: help command")
     await message.answer(
-        **as_list(Bold(help["pictures_cmd"]), help["pictures_cancel"]).as_kwargs()
+        **as_list(
+            Bold(help["pictures_cmd"]),
+            help["pictures_as_image"],
+            help["pictures_as_document"],
+            help["pictures_cancel"],
+        ).as_kwargs()
     )
 
 
@@ -86,7 +91,11 @@ async def process_help_command(message: Message) -> None:
     StateFilter(default_state), or_f(Command("pictures"), F.text == cmd["pictures"])
 )
 async def process_entering_mode_command(
-    message: Message, state: FSMContext, user_type: list[str]
+    message: Message,
+    state: FSMContext,
+    db: Database,
+    user_id: int,
+    user_type: list[str],
 ) -> None:
     logger.info("FSM: pictures: entering pictures mode")
     if "youtube_adm" not in user_type:
@@ -95,30 +104,44 @@ async def process_entering_mode_command(
         await message.answer(msg["no_access"], reply_markup=kb.get_main_kb(user_type))
         return
     await state.set_state(PicturesGroup.background)
+    tokens = [Text(msg["pictures_main"]), ""]
+    mode = await db.settings_value(user_id=user_id, key="generate_pictures_mode")
+    if mode == "document":
+        await state.update_data({"output_type": "document"})
+        tokens.append(as_key_value(msg["current"], msg["pictures_as_document"]))
+    else:
+        mode = "picture"
+        await state.update_data({"output_type": "picture"})
+        tokens.append(as_key_value(msg["current"], msg["pictures_as_image"]))
+    tokens.append(Text(help["pictures_as_image"]))
+    tokens.append(Text(help["pictures_as_document"]))
     await message.answer(
-        msg["pictures_main"], reply_markup=kb.get_pictures_kb(select_mode=True)
+        **as_list(*tokens).as_kwargs(), reply_markup=kb.get_pictures_kb()
     )
 
 
 # Selected Picture output type
-@router.message(
-    StateFilter(PicturesGroup.background),
-    F.text.in_([cmd["as_picture"], cmd["as_document"]]),
-)
-async def process_output_type(message: Message, state: FSMContext) -> None:
+@router.message(StateFilter(PicturesGroup.background), Command("image", "document"))
+async def process_output_type(
+    message: Message, state: FSMContext, db: Database, user_id: int
+) -> None:
     logger.info("FSM: pictures: set output type")
-    if message.text and message.text == cmd["as_picture"]:
+    if message.text and message.text == "/image":
         await state.update_data({"output_type": "picture"})
+        await db.settings_set(
+            user_id=user_id, key="generate_pictures_mode", value="picture"
+        )
         logger.info("FSM: pictures: output as picture")
-    elif message.text and message.text == cmd["as_document"]:
+    elif message.text and message.text == "/document":
         await state.update_data({"output_type": "document"})
+        await db.settings_set(
+            user_id=user_id, key="generate_pictures_mode", value="document"
+        )
         logger.info("FSM: pictures: output as document")
     else:
         logger.warning(f"FSM: pictures: unknown output type: {message.text}")
         return
-    await message.answer(
-        msg["pictures_output_mode"], reply_markup=kb.get_pictures_kb(select_mode=False)
-    )
+    await message.answer(msg["pictures_output_mode"], reply_markup=kb.get_pictures_kb())
 
 
 #  Selected Picture

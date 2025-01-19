@@ -95,11 +95,8 @@ def get_generator_kb() -> ReplyKeyboardMarkup:
 
 
 # PICTURES MENU
-def get_pictures_kb(select_mode: bool) -> ReplyKeyboardMarkup:
+def get_pictures_kb() -> ReplyKeyboardMarkup:
     buttons: list[KeyboardButton] = []
-    if select_mode:
-        buttons.append(KeyboardButton(text=cmd["as_picture"]))
-        buttons.append(KeyboardButton(text=cmd["as_document"]))
     for picture in pictures:
         buttons.append(KeyboardButton(text=picture["title"]))
     buttons.append(KeyboardButton(text=cmd["exit"]))
