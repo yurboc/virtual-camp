@@ -155,18 +155,21 @@ def get_abonement_control_kb(
     if not abonement:
         return None
     builder = InlineKeyboardBuilder()
+    # Visit Button
     builder.button(
         text=(cmd["plus_visit"] if abonement.total_visits == 0 else cmd["minus_visit"]),
         callback_data=AbonementCallbackFactory(
             id=abonement.id, token=abonement.token, action="ask_visit"
         ),
     )
+    # History Button
     builder.button(
         text=cmd["visits_history"],
         callback_data=AbonementCallbackFactory(
             id=abonement.id, token=abonement.token, action="history"
         ),
     )
+    # Share Button
     builder.button(
         text=cmd["share"],
         callback_data=AbonementCallbackFactory(
@@ -174,12 +177,15 @@ def get_abonement_control_kb(
         ),
     )
     if abonement.owner_id == user_id:
+        # Edit Button
+        second_line_buttons_cnt = 3
         builder.button(
             text=cmd["edit"],
             callback_data=AbonementCallbackFactory(
                 id=abonement.id, token=abonement.token, action="edit"
             ),
         )
+        # Delete Button
         builder.button(
             text=cmd["delete"],
             callback_data=AbonementCallbackFactory(
@@ -187,6 +193,8 @@ def get_abonement_control_kb(
             ),
         )
     else:
+        # Unlink Button
+        second_line_buttons_cnt = 2
         builder.button(
             text=cmd["unlink"],
             callback_data=AbonementCallbackFactory(
@@ -194,6 +202,7 @@ def get_abonement_control_kb(
             ),
         )
     if notify and notify == "all":
+        # Notify ON Button
         builder.button(
             text=cmd["notify_on"],
             callback_data=AbonementCallbackFactory(
@@ -201,19 +210,22 @@ def get_abonement_control_kb(
             ),
         )
     else:
+        # Notify OFF Button
         builder.button(
             text=cmd["notify_off"],
             callback_data=AbonementCallbackFactory(
                 id=abonement.id, token=abonement.token, action="notify_on"
             ),
         )
+    # Exit Button
     builder.button(
         text=cmd["exit"],
         callback_data=AbonementCallbackFactory(
             id=abonement.id, token=abonement.token, action="exit"
         ),
     )
-    builder.adjust(*[2, 3, 2], repeat=False)
+    # Adjust buttons
+    builder.adjust(*[2, second_line_buttons_cnt, 2], repeat=False)
     return builder.as_markup()
 
 
