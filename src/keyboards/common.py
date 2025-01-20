@@ -150,7 +150,7 @@ def get_abonement_list_kb(
 
 # ABONEMENT CONTROL MENU
 def get_abonement_control_kb(
-    abonement: TgAbonement, user_id: int
+    abonement: TgAbonement, user_id: int, notify: Optional[str]
 ) -> Optional[InlineKeyboardMarkup]:
     if not abonement:
         return None
@@ -193,13 +193,27 @@ def get_abonement_control_kb(
                 id=abonement.id, token=abonement.token, action="delete"
             ),
         )
+    if notify and notify == "all":
+        builder.button(
+            text=cmd["notify_on"],
+            callback_data=AbonementCallbackFactory(
+                id=abonement.id, token=abonement.token, action="notify_off"
+            ),
+        )
+    else:
+        builder.button(
+            text=cmd["notify_off"],
+            callback_data=AbonementCallbackFactory(
+                id=abonement.id, token=abonement.token, action="notify_on"
+            ),
+        )
     builder.button(
         text=cmd["exit"],
         callback_data=AbonementCallbackFactory(
             id=abonement.id, token=abonement.token, action="exit"
         ),
     )
-    builder.adjust(*[2, 3, 1], repeat=False)
+    builder.adjust(*[2, 3, 2], repeat=False)
     return builder.as_markup()
 
 

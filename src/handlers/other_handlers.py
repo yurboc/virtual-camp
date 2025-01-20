@@ -1,6 +1,6 @@
 import logging
 from aiogram import F, Router
-from aiogram.types import Message
+from aiogram.types import Message, ErrorEvent
 from aiogram.filters import Command
 from aiogram.utils.formatting import as_list
 from const.text import msg, re_uuid
@@ -41,3 +41,9 @@ async def send_default_answer(message: Message):
     await message.answer(
         **as_list(msg["unknown"], msg["help"], msg["cancel"]).as_kwargs()
     )
+
+
+# Handle Telegram errors
+@router.error()
+async def error_handler(event: ErrorEvent):
+    logger.warning("Unhandled error caused by %s", event.exception, exc_info=True)

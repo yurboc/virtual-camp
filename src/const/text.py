@@ -53,6 +53,8 @@ cmd: dict[str, str] = {
     "edit": "✏ Изменить",
     "unlink": "✂️ Отвязать",
     "delete": "🗑 Удалить",
+    "notify_on": "✅ Уведомлять",
+    "notify_off": "❎ Уведомлять",
     "back": "⬅️ Назад",
     "prev": "⏪",
     "next": "⏩",
@@ -114,6 +116,8 @@ msg: dict[str, str] = {
     "ab_visit_confirm": "Подтвердить проход?",
     "ab_visit": "✅ Проход записан",
     "ab_no_visit": "❌ Проход не записан",
+    "notify_on": "🔔 Уведомления включены",
+    "notify_off": "🔕 Уведомления выключены",
     "ab_empty": "На абонементе не осталось проходов",
     "ab_total_visits": "Всего посещений",
     "ab_unlim": "без ограничений",
@@ -304,6 +308,7 @@ def ab_info(
     total_visits: int,
     visits_count: int,
     my_visits_count: int,
+    notify: Optional[str],
 ) -> Text:
     days = expiry_date.date() - datetime.now().date() if expiry_date else None
     days_left = days.days + 1 if days is not None else None
@@ -343,7 +348,7 @@ def ab_info(
             if total_visits != 0
             else [""]
         ),
-        "Выберите действие",
+        msg["notify_on"] if notify and notify == "all" else msg["notify_off"],
     )
     return res
 

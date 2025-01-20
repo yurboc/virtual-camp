@@ -50,6 +50,7 @@ async def callbacks_abonement_open(
         if callback.message and isinstance(callback.message, Message):
             await callback.message.answer(msg["ab_failure_callback"])
         return
+    notify = await db.settings_value(user.id, "notify_abonement_%s" % abonement.id)
     if callback.message and isinstance(callback.message, Message):
         await callback.message.edit_reply_markup(None)
         visits_count = await db.abonement_visits_count(abonement.id)
@@ -62,8 +63,9 @@ async def callbacks_abonement_open(
                 abonement.total_visits,
                 visits_count,
                 my_visits_count,
+                notify,
             ).as_kwargs(),
-            reply_markup=kb.get_abonement_control_kb(abonement, user.id),
+            reply_markup=kb.get_abonement_control_kb(abonement, user.id, notify),
         )
 
 
@@ -391,4 +393,42 @@ async def callbacks_abonement_delete(
         await callback.message.answer(
             **ab_del_ask(user.id == abonement.owner_id, abonement.name).as_kwargs(),
             reply_markup=kb.empty_kb,
+        )
+
+
+# Abonement Notifications
+@router.callback_query(
+    StateFilter(AbonementGroup.open),
+    AbonementCallbackFactory.filter(F.action.in_(["notify_on", "notify_off"])),
+)
+async def callbacks_abonement_notify(
+    callback: CallbackQuery,
+    callback_data: AbonementCallbackFactory,
+    state: FSMContext,
+    db: Database,
+):
+    logger.info("Abonement notifications: %s", callback_data.id)
+    await callback.answer()
+    abonement = await db.abonement_by_id(callback_data.id)
+    user = await db.user_by_tg_id(callback.from_user.id)
+    if not abonement or not user:
+        if callback.message and isinstance(callback.message, Message):
+            await callback.message.answer(msg["ab_failure_callback"])
+        return
+    notify = await db.settings_value(user.id, "notify_abonement_%s" % abonement.id)
+    if callback_data.action == "notify_on" and (notify == "off" or not notify):
+        await db.settings_set(user.id, "notify_abonement_%s" % abonement.id, "all")
+        notify = "all"
+    elif callback_data.action == "notify_off" and notify == "all":
+        await db.settings_set(user.id, "notify_abonement_%s" % abonement.id, "off")
+        notify = "off"
+    logger.info("Abonement notify: %s", notify)
+    if callback.message and isinstance(callback.message, Message):
+        if notify and notify == "all":
+            notify_text = msg["notify_on"]
+        else:
+            notify_text = msg["notify_off"]
+        await callback.message.answer(
+            **as_list(Bold(abonement.name), notify_text).as_kwargs(),
+            reply_markup=kb.get_abonement_control_kb(abonement, user.id, notify),
         )
