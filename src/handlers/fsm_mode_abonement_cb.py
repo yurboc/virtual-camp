@@ -424,6 +424,7 @@ async def callbacks_abonement_notify(
         notify = "off"
     logger.info("Abonement notify: %s", notify)
     if callback.message and isinstance(callback.message, Message):
+        await callback.message.edit_reply_markup(None)
         if notify and notify == "all":
             notify_text = msg["notify_on"]
         else:
