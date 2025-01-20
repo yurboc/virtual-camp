@@ -475,7 +475,7 @@ async def process_wrong_key_join_abonement_command(message: Message) -> None:
 
 
 # Abonement join: GOOD accept answer
-@router.message(StateFilter(AbonementGroup.accept), F.text.in_({"Да", "Нет"}))
+@router.message(StateFilter(AbonementGroup.accept), F.text.in_([cmd["yes"], cmd["no"]]))
 async def process_good_accept_join_abonement_command(
     message: Message, state: FSMContext, db: Database
 ) -> None:
