@@ -190,15 +190,16 @@ async def callbacks_abonement_visits(
             "limit", config["BOT"]["ABONEMENTS"]["PAGINATION_LIMIT"]
         )
         offset = await state.get_value("offset", 0)
-        if callback_data.action == "prev":
+        action = callback_data.action
+        logger.info("Abonement history %s: %s, %s, %s", action, total, limit, offset)
+        if action == "prev":
             if offset == 0:
                 return
-            offset -= limit
             if offset > limit:
                 offset -= limit
             else:
                 offset = 0
-        elif callback_data.action == "next":
+        elif action == "next":
             if offset + limit >= total:
                 return
             offset += limit
