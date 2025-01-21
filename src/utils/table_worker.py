@@ -1,11 +1,9 @@
-import json
 import os
-import pika
 import logging
 from utils.table_converter import TableConverter
 from utils.table_uploader import TableUploader
-from utils.config import config
-from utils.config import tables
+from utils import queue
+from utils.config import config, tables
 
 logger = logging.getLogger(__name__)
 
@@ -56,22 +54,7 @@ class TableWorker:
             msg["uuid"] = msg.get("uuid", "no_uuid")
             msg["table"] = table_params["generator_name"]
             msg["result"] = "done"
-            self.publish_result(msg)
+            queue.publish_result(msg)
             logger.info(f"Done table {table_params['generator_name']}!")
         uploader.quit()
         logger.info("Done converting!")
-
-    # Publish results to RabbitMQ
-    def publish_result(self, msg: dict) -> None:
-        logger.info("Publishing result...")
-        message_json = json.dumps(msg)
-        connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
-        channel = connection.channel()
-        channel.queue_declare(queue=config["RABBITMQ"]["QUEUES"]["RESULTS"])
-        channel.basic_publish(
-            exchange="",
-            routing_key=config["RABBITMQ"]["QUEUES"]["RESULTS"],
-            body=message_json,
-        )
-        connection.close()
-        logger.info("Done publishing result!")

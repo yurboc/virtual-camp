@@ -1,6 +1,4 @@
 import logging
-import json
-import pika
 import uuid
 import keyboards.common as kb
 from typing import Optional
@@ -13,7 +11,8 @@ from aiogram.fsm.state import default_state
 from aiogram.utils.formatting import Text, as_list, as_key_value
 from const.states import MainGroup
 from storage.db_api import Database
-from utils.config import config, tables
+from utils import queue
+from utils.config import tables
 from const.text import cmd, msg, help
 
 logger = logging.getLogger(__name__)
@@ -36,22 +35,6 @@ def get_job_by_name(title: Optional[str]) -> Optional[str]:
     if title == cmd["all"]:
         return "all"
     return None
-
-
-# Publish RabbitMQ message
-def queue_publish_message(msg: dict) -> None:
-    logger.info("Publishing message...")
-    message_json = json.dumps(msg)
-    connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
-    channel = connection.channel()
-    channel.queue_declare(queue=config["RABBITMQ"]["QUEUES"]["TASKS"])
-    channel.basic_publish(
-        exchange="",
-        routing_key=config["RABBITMQ"]["QUEUES"]["TASKS"],
-        body=message_json,
-    )
-    connection.close()
-    logger.info("Done publishing message!")
 
 
 # Entering FST-OTM Tables Generator mode
@@ -95,7 +78,7 @@ async def process_selected_table(
         "job_type": "table_generator",
         "job": job,
     }
-    queue_publish_message(queue_msg)
+    queue.publish_task(queue_msg)
     await message.answer(
         **as_list(msg["table_generating"], as_key_value("ID", task.id)).as_kwargs(),
         reply_markup=kb.go_home_kb,

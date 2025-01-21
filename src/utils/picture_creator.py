@@ -1,10 +1,8 @@
-import json
 import os
-import pika
 import logging
 import tempfile
 from PIL import Image, ImageDraw, ImageFont
-from utils.config import config
+from utils import queue
 
 logger = logging.getLogger(__name__)
 
@@ -100,21 +98,6 @@ class PictureCreator:
         temp_path = self.save_image_with_quality(background, 95)
         return temp_path
 
-    # Publish results to RabbitMQ
-    def publish_result(self, msg: dict) -> None:
-        logger.info("Publishing result...")
-        message_json = json.dumps(msg)
-        connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
-        channel = connection.channel()
-        channel.queue_declare(queue=config["RABBITMQ"]["QUEUES"]["RESULTS"])
-        channel.basic_publish(
-            exchange="",
-            routing_key=config["RABBITMQ"]["QUEUES"]["RESULTS"],
-            body=message_json,
-        )
-        connection.close()
-        logger.info("Done publishing result!")
-
     # Handle new task from RabbitMQ
     def handle_new_task(self, msg: dict) -> None:
         logger.info("Generate picture...")
@@ -132,7 +115,7 @@ class PictureCreator:
             msg["uuid"] = msg.get("uuid", "no_uuid")
             msg["image"] = generated_image_path
             msg["result"] = "done"
-            self.publish_result(msg)
+            queue.publish_result(msg)
             logger.info("Result: {}".format(msg))
             logger.info("Done image generating!")
         except Exception as e:

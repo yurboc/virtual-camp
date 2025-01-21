@@ -1,6 +1,4 @@
 import logging
-import json
-import pika
 import uuid
 import keyboards.common as kb
 from typing import Optional
@@ -14,7 +12,8 @@ from aiogram.utils.formatting import Text, Bold, as_list, as_key_value
 from const.states import PicturesGroup
 from const.text import cmd, msg, help
 from storage.db_api import Database
-from utils.config import config, pictures
+from utils import queue
+from utils.config import pictures
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)
@@ -37,20 +36,6 @@ def get_job_by_name(title: Optional[str]) -> Optional[dict]:
         if picture["title"] == title:
             return picture
     return None
-
-
-# Publish RabbitMQ message
-def queue_publish_message(msg: dict) -> None:
-    logger.info("Publishing message...")
-    message_json = json.dumps(msg)
-    connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
-    channel = connection.channel()
-    queue = config["RABBITMQ"]["QUEUES"]["TASKS"]
-    channel.queue_declare(queue=queue)
-    logger.info("Publish to %s: %s", queue, message_json)
-    channel.basic_publish(exchange="", routing_key=queue, body=message_json)
-    connection.close()
-    logger.info("Done publishing message!")
 
 
 #
@@ -196,7 +181,7 @@ async def process_text(
         "output_type": output_type,
     }
     logger.debug(f"FSM: pictures: task '{queue_msg}' prepared")
-    queue_publish_message(queue_msg)
+    queue.publish_task(queue_msg)
     await message.answer(
         **as_list(msg["pictures_generating"], as_key_value("ID", task.id)).as_kwargs(),
         reply_markup=kb.go_home_kb,
