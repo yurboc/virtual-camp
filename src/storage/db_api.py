@@ -7,7 +7,7 @@ from storage.db_schema import TgUpdate, TgMessage, TgUser, TgNotification, TgTas
 from storage.db_schema import TgAbonement, TgAbonementUser, TgAbonementVisit
 from storage.db_schema import TgInvite, TgInviteUser
 from storage.db_schema import TgSettings
-from sqlalchemy import select, not_
+from sqlalchemy import select, delete, not_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.expression import func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -300,7 +300,7 @@ class Database:
             select(TgAbonementVisit)
             .options(joinedload(TgAbonementVisit.user))
             .where(TgAbonementVisit.abonement_id == abonement_id)
-            .order_by(TgAbonementVisit.id.desc())
+            .order_by(TgAbonementVisit.ts.desc())
             .limit(limit)
             .offset(offset)
         )
@@ -334,6 +334,52 @@ class Database:
         self.session.add(abonement_visit)
         await self.session.commit()
         return abonement_visit
+
+    # Abonement visit get
+    async def abonement_visit_get(self, visit_id: int) -> Optional[TgAbonementVisit]:
+        stmt = select(TgAbonementVisit).where(TgAbonementVisit.id == visit_id)
+        result = await self.session.execute(stmt)
+        abonement_visit = result.scalars().first()
+        return abonement_visit
+
+    # Abonement visit update
+    async def abonement_visit_update(
+        self, visit_id: int, user_id: int, visit_date: datetime
+    ) -> bool:
+        visit = await self.abonement_visit_get(visit_id)
+        # Check Visit
+        if not visit:
+            return False
+        abonement = await self.abonement_by_id(visit.abonement_id)
+        # Check Abonement
+        if not abonement or abonement.hidden:
+            return False
+        # Check Owner
+        if visit.user_id != user_id and abonement.owner_id != user_id:
+            return False
+        # Update Visit
+        visit.ts = visit_date
+        await self.session.commit()
+        return True
+
+    # Abonement visit delete
+    async def abonement_visit_delete(self, visit_id: int, user_id: int) -> bool:
+        visit = await self.abonement_visit_get(visit_id)
+        # Check Visit
+        if not visit:
+            return False
+        abonement = await self.abonement_by_id(visit.abonement_id)
+        # Check Abonement
+        if not abonement or abonement.hidden:
+            return False
+        # Check Owner
+        if visit.user_id != user_id and abonement.owner_id != user_id:
+            return False
+        # Delete Visit
+        stmt = delete(TgAbonementVisit).where(TgAbonementVisit.id == visit_id)
+        await self.session.execute(stmt)
+        await self.session.commit()
+        return True
 
     # Create invite
     async def invite_create(self, token: str, group: str) -> TgInvite:

@@ -41,4 +41,8 @@ class AbonementGroup(MainGroup):
     accept = State()
     open = State()
     visit = State()
+    visit_edit = State()
+    visit_delete = State()
+    visit_edit_confirm = State()
+    visit_delete_confirm = State()
     delete = State()

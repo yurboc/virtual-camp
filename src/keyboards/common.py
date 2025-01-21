@@ -3,9 +3,9 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemo
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from aiogram.filters.callback_data import CallbackData
-from storage.db_schema import TgAbonement
+from storage.db_schema import TgAbonement, TgAbonementVisit
 from utils.config import tables, pictures
-from const.text import cmd, user_types
+from const.text import cmd, user_types, date_h_m_fmt
 
 
 # Abonement Callback factory
@@ -234,6 +234,22 @@ def get_abonement_history_kb(
     abonement: TgAbonement, offset: int = 0, limit: int = 0, total: int = 0
 ) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
+    if total:
+        # Edit Button
+        builder.button(
+            text=cmd["edit"],
+            callback_data=AbonementCallbackFactory(
+                id=abonement.id, token=abonement.token, action="visit_edit"
+            ),
+        )
+        # Remove Button
+        builder.button(
+            text=cmd["delete"],
+            callback_data=AbonementCallbackFactory(
+                id=abonement.id, token=abonement.token, action="visit_delete"
+            ),
+        )
+    # Back Button
     builder.button(
         text=cmd["back"],
         callback_data=AbonementCallbackFactory(
@@ -241,6 +257,7 @@ def get_abonement_history_kb(
         ),
     )
     if offset > 0:
+        # Prev Button
         builder.button(
             text=cmd["prev"],
             callback_data=AbonementCallbackFactory(
@@ -248,19 +265,49 @@ def get_abonement_history_kb(
             ),
         )
     if offset + limit < total:
+        # Next Button
         builder.button(
             text=cmd["next"],
             callback_data=AbonementCallbackFactory(
                 id=abonement.id, token=abonement.token, action="next"
             ),
         )
+    # Exit Button
     builder.button(
         text=cmd["exit"],
         callback_data=AbonementCallbackFactory(
             id=abonement.id, token=abonement.token, action="exit"
         ),
     )
-    builder.adjust(4)
+    # Adjust buttons
+    builder.adjust(*[2, 4], repeat=False)
+    return builder.as_markup()
+
+
+# ABONEMENT VISITS EDIT/DELETE MENU
+def get_abonement_visits_kb(
+    abonement: TgAbonement, visits_list: Sequence[TgAbonementVisit], action: str
+) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    for visit in visits_list:
+        # Edit/Delete Button
+        builder.button(
+            text=visit.ts.strftime(date_h_m_fmt),
+            callback_data=AbonementCallbackFactory(
+                id=abonement.id,
+                token=abonement.token,
+                action="{}_{}".format(action, visit.id),
+            ),
+        )
+    # Exit Button
+    builder.button(
+        text=cmd["exit"],
+        callback_data=AbonementCallbackFactory(
+            id=abonement.id, token=abonement.token, action="exit"
+        ),
+    )
+    # Adjust buttons
+    builder.adjust(1)
     return builder.as_markup()
 
 

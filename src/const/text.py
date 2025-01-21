@@ -78,6 +78,8 @@ msg: dict[str, str] = {
     "unavailable": "информация недоступна",
     "example": "Пример",
     "current": "Текущее",
+    "done": "✅ Выполнено",
+    "not_done": "❎ Не выполнено",
     "date_format": "ДД.ММ.ГГГГ",
     "date_time_format": "ДД.ММ.ГГГГ ЧЧ:ММ",
     "uuid_format": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
@@ -148,6 +150,12 @@ msg: dict[str, str] = {
     "ab_new_done": "Новый абонемент создан",
     "ab_edit_done": "Абонемент изменён",
     "ab_not_del": "Абонемент не удален",
+    "ab_visit_edit": "📝 Изменение даты посещения",
+    "ab_visit_delete": "⚠️ Удаление посещения",
+    "ab_visit_select": "Нажмите на кнопку с выбранным посещением",
+    "ab_visit_not_owner": "Вы не владелец абонемента и посещение не ваше",
+    "ab_visit_date": "Текущая дата",
+    "ab_visit_new_date": "Задайте новую дату в формате",
     # Abonement: join using menu
     "ab_join_begin": "Подключаем существующий абонемент",
     "ab_join_key": "Введите ключ абонемента",
@@ -370,6 +378,16 @@ def ab_page(offset: int, total: int, visits: int) -> Text:
     return res
 
 
+# Abonement Visit: ask to delete or unlink
+def ab_del_visit_ask() -> Text:
+    res = as_list(
+        Text("Отправьте ", Bold(cmd["txt_yes"]), " чтобы удалить посещение"),
+        "",
+        "/cancel - отменить удаление посещения",
+    )
+    return res
+
+
 # Abonement: ask to delete or unlink
 def ab_del_ask(user_is_owner: bool, name: str) -> Text:
     res = as_list(
@@ -378,7 +396,7 @@ def ab_del_ask(user_is_owner: bool, name: str) -> Text:
         "",
         Text(
             "Отправьте ",
-            Bold("да"),
+            Bold(cmd["txt_yes"]),
             " в ответ, если хотите ",
             (Bold("удалить") if user_is_owner else Bold("отключить")),
             " его",

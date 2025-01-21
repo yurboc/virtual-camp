@@ -21,7 +21,7 @@ from datetime import datetime
 from const.states import MainGroup, AbonementGroup
 from storage.db_api import Database
 from utils.config import config
-from const.text import cmd, msg, help, ab_del, re_uuid, date_fmt
+from const.text import cmd, msg, help, ab_del, re_uuid, date_fmt, date_h_m_fmt
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)
@@ -509,7 +509,7 @@ async def process_wrong_accept_join_abonement_command(message: Message) -> None:
 # Abonement delete: got answer
 @router.message(StateFilter(AbonementGroup.delete))
 async def process_good_delete_abonement_command(
-    message: Message, state: FSMContext, user_id: int, db: Database
+    message: Message, state: FSMContext, db: Database, user_id: int
 ) -> None:
     logger.info("FSM: abonement: GOOD delete answer for abonement")
     data = await state.get_data()
@@ -526,6 +526,62 @@ async def process_good_delete_abonement_command(
         )
     else:
         await message.answer(msg["ab_not_del"], reply_markup=kb.get_abonement_kb())
+
+
+# Abonement Visit edit: got answer
+@router.message(StateFilter(AbonementGroup.visit_edit_confirm))
+async def process_visit_edit_command(
+    message: Message, state: FSMContext, db: Database, user_id: int
+) -> None:
+    logger.info("FSM: abonement: GOOD answer for abonement visit edit")
+    # Collect data
+    data = await state.get_data()
+    visit_id_str = data.get("visit_id")
+    await state.clear()
+    await state.set_state(MainGroup.abonement_mode)
+    if not message.text or not visit_id_str:
+        logger.info("FSM: abonement: no date for visit")
+        await message.answer(msg["not_done"], reply_markup=kb.get_abonement_kb())
+        return
+    user_input = message.text.strip()
+    visit_id = int(visit_id_str)
+    # Check date format
+    try:
+        visit_date = datetime.strptime(user_input, date_h_m_fmt)
+        logger.info("FSM: abonement: set date %s for visit %s", visit_date, visit_id)
+    except ValueError:
+        logger.warning("FSM: abonement: wrong expiry date")
+        await message.answer(msg["not_done"], reply_markup=kb.get_abonement_kb())
+        return
+    # Set Visit date
+    result = await db.abonement_visit_update(visit_id, user_id, visit_date)
+    if result:
+        await message.answer(msg["done"], reply_markup=kb.get_abonement_kb())
+    else:
+        await message.answer(msg["not_done"], reply_markup=kb.get_abonement_kb())
+
+
+# Abonement Visit delete: got answer
+@router.message(StateFilter(AbonementGroup.visit_delete_confirm))
+async def process_visit_delete_command(
+    message: Message, state: FSMContext, db: Database, user_id: int
+) -> None:
+    logger.info("FSM: abonement: GOOD answer for abonement visit delete")
+    # Collect data
+    data = await state.get_data()
+    await state.clear()
+    await state.set_state(MainGroup.abonement_mode)
+    visit_id = data.get("visit_id")
+    if message.text and message.text.strip().lower() == cmd["txt_yes"] and visit_id:
+        # Delete Visit
+        result = await db.abonement_visit_delete(visit_id=visit_id, user_id=user_id)
+        logger.info("FSM: abonement: visit %s deleted: %s", visit_id, result)
+        if result:
+            await message.answer(msg["done"], reply_markup=kb.get_abonement_kb())
+            return
+    # Don't delete Visit
+    logger.info("FSM: abonement: visit %s not deleted", visit_id)
+    await message.answer(msg["not_done"], reply_markup=kb.get_abonement_kb())
 
 
 # Unknown command for Abonement mode and Abonement Control mode

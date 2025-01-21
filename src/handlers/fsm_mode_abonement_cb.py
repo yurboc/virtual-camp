@@ -5,7 +5,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.filters import StateFilter
 from aiogram.filters import or_f
 from aiogram.fsm.context import FSMContext
-from aiogram.utils.formatting import Text, Bold, Italic, TextLink, as_list
+from aiogram.utils.formatting import Text, Bold, Italic, TextLink, as_list, as_key_value
 from aiogram.utils.deep_linking import create_start_link
 from const.states import MainGroup, AbonementGroup
 from keyboards.common import AbonementCallbackFactory
@@ -16,6 +16,7 @@ from const.text import (
     ab_info,
     ab_page,
     ab_del_ask,
+    ab_del_visit_ask,
     date_h_m_fmt,
     date_fmt,
 )
@@ -71,8 +72,7 @@ async def callbacks_abonement_open(
 
 # Exit from Abonement
 @router.callback_query(
-    StateFilter(AbonementGroup.open),
-    AbonementCallbackFactory.filter(F.action == "exit"),
+    StateFilter(AbonementGroup), AbonementCallbackFactory.filter(F.action == "exit")
 )
 async def callbacks_abonement_reject_visit(
     callback: CallbackQuery,
@@ -242,6 +242,123 @@ async def callbacks_abonement_visits(
                 reply_markup=kb.get_abonement_history_kb(
                     abonement, offset, limit, total
                 ),
+            )
+
+
+# History of Abonement -- select Visit to EDIT or DELETE
+@router.callback_query(
+    StateFilter(AbonementGroup.open),
+    AbonementCallbackFactory.filter(F.action.in_(["visit_edit", "visit_delete"])),
+)
+async def callbacks_abonement_edit_delete_select_visits(
+    callback: CallbackQuery,
+    callback_data: AbonementCallbackFactory,
+    state: FSMContext,
+    db: Database,
+):
+    logger.info("Abonement history edit/delete: %s", callback_data.id)
+    await callback.answer()
+    abonement = await db.abonement_by_id(callback_data.id)
+    if not abonement or abonement.token != callback_data.token:
+        if callback.message and isinstance(callback.message, Message):
+            await callback.message.answer(msg["ab_failure_callback"])
+        return
+    if callback.message and isinstance(callback.message, Message):
+        # Calculate pagination
+        total = await db.abonement_visits_count(abonement.id)
+        limit = await state.get_value(
+            "limit", config["BOT"]["ABONEMENTS"]["PAGINATION_LIMIT"]
+        )
+        offset = await state.get_value("offset", 0)
+        action = callback_data.action
+        # Get visits for current page
+        logger.info("Abonement history %s: %s, %s, %s", action, total, limit, offset)
+        visits_text = []
+        if action == "visit_edit":
+            await state.set_state(AbonementGroup.visit_edit)
+            visits_text = [Text(msg["ab_visit_edit"]), Text(msg["ab_visit_select"])]
+        elif action == "visit_delete":
+            await state.set_state(AbonementGroup.visit_delete)
+            visits_text = [Text(msg["ab_visit_delete"]), Text(msg["ab_visit_select"])]
+        else:
+            logger.error("Unknown action: %s", action)
+            return
+        # Create message
+        answer = as_list(*(visits_text))
+        visits_list = await db.abonement_visits_list(abonement.id, limit, offset)
+        await callback.message.edit_reply_markup(None)
+        await callback.message.answer(
+            **answer.as_kwargs(),
+            reply_markup=kb.get_abonement_visits_kb(abonement, visits_list, action),
+        )
+
+
+# History of Abonement -- confirm EDIT or DELETE of Visit
+@router.callback_query(
+    StateFilter(AbonementGroup.visit_edit, AbonementGroup.visit_delete),
+    AbonementCallbackFactory.filter(),
+)
+async def callbacks_abonement_edit_delete_confirm_visits(
+    callback: CallbackQuery,
+    callback_data: AbonementCallbackFactory,
+    state: FSMContext,
+    db: Database,
+):
+    logger.info("Visit edit/delete ask: %s %s", callback_data.id, callback_data.action)
+    await callback.answer()
+    abonement = await db.abonement_by_id(callback_data.id)
+    user = await db.user_by_tg_id(callback.from_user.id)
+    act_parts = callback_data.action.split("_")
+    if (
+        len(act_parts) != 3
+        or act_parts[0] != "visit"
+        or act_parts[1] not in ["edit", "delete"]
+        or not abonement
+        or not int(act_parts[2])
+        or abonement.token != callback_data.token
+        or not user
+    ):
+        if callback.message and isinstance(callback.message, Message):
+            await callback.message.answer(msg["ab_failure_callback"])
+        return
+    # Get operation parameters
+    action = act_parts[1]
+    visit_id = int(act_parts[2])
+    visit = await db.abonement_visit_get(visit_id)
+    if not visit:
+        logger.warning("Visit not found: %s", visit_id)
+        return
+    if callback.message and isinstance(callback.message, Message):
+        await callback.message.edit_reply_markup(None)
+        is_abonement_owner = user.id == abonement.owner_id
+        is_visit_owner = user.id == visit.user_id
+        # Check permissions
+        if not is_abonement_owner and not is_visit_owner:
+            logger.info("Visit %s not owned by user", visit_id)
+            await state.set_state(MainGroup.abonement_mode)
+            await callback.message.answer(
+                msg["ab_visit_not_owner"], reply_markup=kb.get_abonement_kb()
+            )
+            return
+        # Save operation parameters
+        await state.update_data({"visit_id": visit.id})
+        # Process operation
+        if action == "edit":
+            logger.info("Visit edit: %s", visit_id)
+            await state.set_state(AbonementGroup.visit_edit_confirm)
+            await callback.message.answer(
+                **as_list(
+                    as_key_value(msg["ab_visit_date"], visit.ts.strftime(date_h_m_fmt)),
+                    Text(msg["ab_visit_new_date"], " ", msg["date_time_format"]),
+                    Text(msg["cancel"]),
+                ).as_kwargs(),
+                reply_markup=kb.empty_kb,
+            )
+        elif action == "delete":
+            logger.info("Visit delete: %s", visit_id)
+            await state.set_state(AbonementGroup.visit_delete_confirm)
+            await callback.message.answer(
+                **ab_del_visit_ask().as_kwargs(), reply_markup=kb.empty_kb
             )
 
 
