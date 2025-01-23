@@ -244,6 +244,13 @@ class Database:
         abonement = result.scalars().first()
         return abonement
 
+    # Abonement users
+    async def abonement_users(self, id: int) -> Sequence[TgAbonementUser]:
+        stmt = select(TgAbonementUser).where(TgAbonementUser.abonement_id == id)
+        result = await self.session.execute(stmt)
+        abonement_users = result.scalars().all()
+        return abonement_users
+
     # Abonement add user
     async def abonement_user_add(
         self, user_id: int, abonement_id: int, abonement_token: str

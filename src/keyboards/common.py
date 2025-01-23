@@ -294,9 +294,7 @@ def get_abonement_visits_kb(
         builder.button(
             text=visit.ts.strftime(date_h_m_fmt),
             callback_data=AbonementCallbackFactory(
-                id=abonement.id,
-                token=abonement.token,
-                action="{}_{}".format(action, visit.id),
+                id=abonement.id, token="", action="{}_{}".format(action, visit.id)
             ),
         )
     # Exit Button

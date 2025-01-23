@@ -10,6 +10,7 @@ from aiogram.utils.deep_linking import create_start_link
 from const.states import MainGroup, AbonementGroup
 from keyboards.common import AbonementCallbackFactory
 from storage.db_api import Database
+from utils import queue
 from utils.config import config
 from const.text import (
     msg,
@@ -159,6 +160,17 @@ async def callbacks_abonement_accept_visit(
     if callback.message and isinstance(callback.message, Message):
         if abonement_visit:  # Visit DONE
             result = [msg["ab_visit"], Bold(abonement_visit.ts.strftime(date_h_m_fmt))]
+            queue.publish_result(
+                {
+                    "job_type": "abonement_visit",
+                    "msg_type": "visit_new",
+                    "abonement_id": abonement.id,
+                    "visit_id": abonement_visit.id,
+                    "visit_user_id": abonement_visit.user_id,
+                    "user_id": user.id,
+                    "ts": abonement_visit.ts.strftime(date_h_m_fmt),
+                }
+            )
         else:  # Visit FAILED (Abonement empty or deleted)
             result = [msg["ab_no_visit"], Bold(msg["ab_empty"])]
         await callback.message.edit_reply_markup(None)
@@ -315,7 +327,6 @@ async def callbacks_abonement_edit_delete_confirm_visits(
         or act_parts[1] not in ["edit", "delete"]
         or not abonement
         or not int(act_parts[2])
-        or abonement.token != callback_data.token
         or not user
     ):
         if callback.message and isinstance(callback.message, Message):

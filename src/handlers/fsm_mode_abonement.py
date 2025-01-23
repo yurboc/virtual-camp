@@ -21,6 +21,7 @@ from datetime import datetime
 from const.states import MainGroup, AbonementGroup
 from storage.db_api import Database
 from utils.config import config
+from utils import queue
 from const.text import cmd, msg, help, ab_del, re_uuid, date_fmt, date_h_m_fmt
 
 logger = logging.getLogger(__name__)
@@ -553,9 +554,24 @@ async def process_visit_edit_command(
         logger.warning("FSM: abonement: wrong expiry date")
         await message.answer(msg["not_done"], reply_markup=kb.get_abonement_kb())
         return
+    # Get old Visit
+    visit = await db.abonement_visit_get(visit_id)
+    visit_date_old = visit.ts.strftime(date_h_m_fmt) if visit else None
     # Set Visit date
     result = await db.abonement_visit_update(visit_id, user_id, visit_date)
     if result:
+        queue.publish_result(
+            {
+                "job_type": "abonement_visit",
+                "msg_type": "visit_edit",
+                "abonement_id": visit.abonement_id if visit else None,
+                "visit_id": visit_id,
+                "visit_user_id": visit.user_id if visit else None,
+                "user_id": user_id,
+                "ts": visit_date_old,
+                "ts_new": visit_date.strftime(date_h_m_fmt),
+            }
+        )
         await message.answer(msg["done"], reply_markup=kb.get_abonement_kb())
     else:
         await message.answer(msg["not_done"], reply_markup=kb.get_abonement_kb())
@@ -573,10 +589,24 @@ async def process_visit_delete_command(
     await state.set_state(MainGroup.abonement_mode)
     visit_id = data.get("visit_id")
     if message.text and message.text.strip().lower() == cmd["txt_yes"] and visit_id:
+        # Get old Visit
+        visit = await db.abonement_visit_get(visit_id)
+        visit_date = visit.ts.strftime(date_h_m_fmt) if visit else None
         # Delete Visit
         result = await db.abonement_visit_delete(visit_id=visit_id, user_id=user_id)
         logger.info("FSM: abonement: visit %s deleted: %s", visit_id, result)
         if result:
+            queue.publish_result(
+                {
+                    "job_type": "abonement_visit",
+                    "msg_type": "visit_delete",
+                    "abonement_id": visit.abonement_id if visit else None,
+                    "visit_id": visit_id,
+                    "visit_user_id": visit.user_id if visit else None,
+                    "user_id": user_id,
+                    "ts": visit_date,
+                }
+            )
             await message.answer(msg["done"], reply_markup=kb.get_abonement_kb())
             return
     # Don't delete Visit

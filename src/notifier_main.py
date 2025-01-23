@@ -23,7 +23,7 @@ url: URL = URL.create(
     database=config["DB"]["NAME"],
 )
 engine = create_async_engine(url, echo=False)
-AsyncSessionLocal = async_sessionmaker(bind=engine)
+AsyncSessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False)
 
 
 # MAIN
