@@ -211,7 +211,7 @@ class Database:
         await self.session.commit()
         return abonement
 
-    # Abonement add SpreadSheetId
+    # Abonement add/edit SpreadSheet ID
     async def abonement_edit_spreadsheetid(
         self, abonement_id: int, spreadsheet_id: str
     ) -> Optional[TgAbonement]:

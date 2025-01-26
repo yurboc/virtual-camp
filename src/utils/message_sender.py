@@ -7,7 +7,7 @@ from aiogram.enums import ParseMode
 from aiogram.types import FSInputFile
 from aiogram.client.default import DefaultBotProperties
 from aiogram.utils.formatting import Text, TextLink, as_key_value, as_list
-from const.text import msg, date_h_m_fmt
+from const.text import msg, date_fmt, date_h_m_fmt
 from storage.db_schema import TgUser
 from storage.db_api import Database
 from utils.config import tables
@@ -52,9 +52,10 @@ class MessageSender:
             if not abonement or abonement.hidden:
                 logger.warning("Abonement %s bad", self.abonement_id)
                 return False
-            # Create spreadsheet if not exists
+            # Check Abonement spreadsheet ID
             spreadsheet_id = abonement.spreadsheet_id
             if not spreadsheet_id:
+                # Create spreadsheet if not exists
                 logger.info("Abonement %s has no spreadsheet", self.abonement_id)
                 self.table.prepareFolder()
                 spreadsheet_id = self.table.createFromTemplate(abonement.name)
@@ -62,6 +63,7 @@ class MessageSender:
                     logger.warning("Can't create spreadsheet")
                     return False
                 self.table.setAccess()
+                # Update Abonement spreadsheet id in DB
                 await db.abonement_edit_spreadsheetid(self.abonement_id, spreadsheet_id)
             # Update Abonement information in spreadsheet
             logger.info("Update Abonement %s in %s", self.abonement_id, spreadsheet_id)
@@ -69,11 +71,12 @@ class MessageSender:
             if not abonement_owner:
                 logger.warning("Abonement %s has bad owner", self.abonement_id)
                 return False
+            self.table.setSpreadsheetId(spreadsheet_id)
             self.table.abonementUpdate(
                 abonement.name,
                 abonement.token,
                 (
-                    abonement.expiry_date.strftime(date_h_m_fmt)
+                    abonement.expiry_date.strftime(date_fmt)
                     if abonement.expiry_date
                     else msg["ab_unlim"]
                 ),
@@ -86,6 +89,8 @@ class MessageSender:
             if not abonement_visits:
                 logger.info("Abonement %s has no visits", self.abonement_id)
                 return False
+            else:
+                logger.info("Abonement has %s visit(s)", len(abonement_visits))
             visits = list()
             for visit in abonement_visits:
                 user = await db.user_by_id(visit.user_id)
@@ -180,14 +185,14 @@ class MessageSender:
                     return False
                 # Add/update/delete Abonement Visit in Google Sheet
                 if abonement.spreadsheet_id:
+                    logger.info("Use Sheet ID: %s", abonement.spreadsheet_id)
                     self.table.setSpreadsheetId(abonement.spreadsheet_id)
                     if self.msg_type == "visit_new":
-                        self.table.visitAdd(self.ts, visit_user.name, visit_id)
+                        self.table.visitAdd(visit_id, self.ts, visit_user.name)
                     elif self.msg_type == "visit_edit":
-                        self.table.visitUpdate(self.ts_new, visit_user.name, visit_id)
+                        self.table.visitUpdate(visit_id, self.ts_new)
                     elif self.msg_type == "visit_delete":
                         self.table.visitDelete(visit_id)
-
             else:
                 logger.warning("Wrong db connection or wrong data")
                 return False
@@ -331,17 +336,25 @@ class MessageSender:
             self.table = TableConverter()
             self.table.auth()
             self.pending = "abonement_update"
-            self.abonement_id = int(msg.get("abonement_id"))
-            self.user_tg_id = int(msg.get("user_tg_id"))
+            self.abonement_id = (
+                int(msg.get("abonement_id")) if msg.get("abonement_id") else None
+            )
+            self.user_tg_id = (
+                int(msg.get("user_tg_id")) if msg.get("user_tg_id") else None
+            )
         elif msg.get("job_type") == "abonement_visit":
             self.table = TableConverter()
             self.table.auth()
             self.pending = "abonement_visit"
             self.msg_type = msg.get("msg_type")
-            self.abonement_id = int(msg.get("abonement_id"))
-            self.visit_id = int(msg.get("visit_id"))
-            self.visit_user_id = int(msg.get("visit_user_id"))
-            self.user_id = int(msg.get("user_id"))
+            self.abonement_id = (
+                int(msg.get("abonement_id")) if msg.get("abonement_id") else None
+            )
+            self.visit_id = int(msg.get("visit_id")) if msg.get("visit_id") else None
+            self.visit_user_id = (
+                int(msg.get("visit_user_id")) if msg.get("visit_user_id") else None
+            )
+            self.user_id = int(msg.get("user_id")) if msg.get("user_id") else None
             self.ts = msg.get("ts")
             self.ts_new = msg.get("ts_new")
         else:
@@ -356,10 +369,12 @@ class MessageSender:
         # Notify about abonement update
         if self.pending == "abonement_update":
             need_notify = True if self.user_tg_id else False
+            logger.info("Notify (%s) about abonement update...", need_notify)
             return await self.notify_abonement_update(need_notify=need_notify)
 
         # Notify about abonement visit
         if self.pending == "abonement_visit":
+            logger.info("Notify about abonement visit...")
             return await self.notify_abonement_visit()
 
         # Notify about task result

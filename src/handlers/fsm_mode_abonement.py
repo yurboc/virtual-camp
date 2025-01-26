@@ -271,7 +271,9 @@ async def process_good_expiry_date_abonement_command(
         Text(msg["ab_new_empty_descr"]),
     ]
     if await state.get_value("abonement_id"):
-        description = await state.get_value("description", msg["none"])
+        description = await state.get_value("description")
+        if not description:
+            description = msg["none"]
         tokens.append(as_key_value(msg["current"], description))
         tokens.append(Text(msg["skip"]))
     await message.answer(
@@ -319,9 +321,9 @@ async def process_good_description_abonement_command(
             abonement_id=abonement_id,
             name=abonement_name,
             owner=user,
-            total_visits=total_visits,
-            expiry_date=expiry_date,
-            description=description,
+            total_visits=total_visits if total_visits else 0,
+            expiry_date=expiry_date if expiry_date else None,
+            description=description if description else None,
         )
         if abonement:
             logger.info(f"Updated abonement {abonement.id}")

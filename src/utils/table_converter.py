@@ -209,7 +209,6 @@ class TableConverter:
     def abonementUpdate(
         self, abonement_name, token, expiry_date, total_visits, description, owner_name
     ):
-        logger.info("Updating Abonement...")
         # Update fields
         self.service_sheets.spreadsheets().values().batchUpdate(
             spreadsheetId=self.spreadsheetId,
@@ -220,12 +219,12 @@ class TableConverter:
                         "range": config["GOOGLE"]["DRIVE"]["ABONEMENT_INFO_RANGE"],
                         "majorDimension": "ROWS",
                         "values": [
-                            [abonement_name],
-                            [description],
-                            [None, token],
-                            [None, expiry_date],
-                            [None, total_visits],
-                            [None, owner_name],
+                            [abonement_name if abonement_name else ""],
+                            [description if description else ""],
+                            [None, token if token else ""],
+                            [None, expiry_date if expiry_date else ""],
+                            [None, total_visits if total_visits else ""],
+                            [None, owner_name if owner_name else ""],
                         ],
                     }
                 ],
@@ -234,12 +233,12 @@ class TableConverter:
         logger.info("Done updating table: %s")
         # Rename file
         self.service_drive.files().update(
-            fileId=self.spreadsheetId, body={"name": abonement_name}
+            fileId=self.spreadsheetId, body={"name": abonement_name or "wrong_name"}
         ).execute()
         logger.info("Done rename file")
 
     # Add Visit to Abonement
-    def visitAdd(self, date, user_name, visit_id):
+    def visitAdd(self, visit_id, date, user_name):
         logger.info("Add Visit to Abonement...")
         # Update fields
         self.service_sheets.spreadsheets().values().append(
@@ -383,18 +382,18 @@ class TableConverter:
         current_visits = results.get("values", [])
         found_visits = []
         for row in current_visits:
-            for col in row:
-                found_visits.append(col)
+            found_visits.append(row[2])
 
         # Take unique Vsits
         new_visits = []
         for visit in visits:
             visit_id, visit_ts, visit_user = visit
-            if visit_id in found_visits:
+            if str(visit_id) in found_visits:
                 continue
             new_visits.append([visit_ts, visit_user, visit_id, "1"])
 
         # Add new Visits
+        logger.info("Found %d new Visits...", len(new_visits))
         self.service_sheets.spreadsheets().values().append(
             spreadsheetId=self.spreadsheetId,
             insertDataOption="OVERWRITE",

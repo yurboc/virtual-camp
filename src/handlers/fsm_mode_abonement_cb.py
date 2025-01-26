@@ -458,7 +458,7 @@ async def callbacks_abonement_edit(
             {
                 "abonement_id": abonement.id,
                 "name": abonement.name,
-                "description": abonement.description,
+                "description": abonement.description or "",
                 "expiry_date": (
                     abonement.expiry_date.isoformat() if abonement.expiry_date else None
                 ),
