@@ -14,7 +14,7 @@ class TableWorker:
 
     # Get output file path
     def get_output_file_path(self, file_name: str) -> str:
-        return os.path.join(config["OUTPUT"]["DIR"], file_name)
+        return os.path.join(config["TABLE_CONVERTER"]["OUTPUT_DIR"], file_name)
 
     # Convert one table from Google Spreadsheet to JavaScript (JSON)
     def convert_table(self, converter: TableConverter, table_params: dict) -> None:
@@ -30,7 +30,7 @@ class TableWorker:
     # Upload generated JavaScript file to FTP
     def upload_table(self, uploader: TableUploader, table_params: dict) -> None:
         logger.info(f"Uploading file: {table_params['output_file']}")
-        uploader.upload(table_params, local_dir=config["OUTPUT"]["DIR"])
+        uploader.upload(table_params, local_dir=config["TABLE_CONVERTER"]["OUTPUT_DIR"])
         logger.info(f"Uploaded file: {table_params['output_file']}")
 
     # Handle new task from RabbitMQ

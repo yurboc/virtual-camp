@@ -10,22 +10,32 @@ development:
       FILE: log/notifier.log
       LEVEL: INFO
 
-  OUTPUT:
-    DIR: output
+  TABLE_CONVERTER:
+    OUTPUT_DIR: output
 
-  CRED_GOOGLE:
-    type: service_account
-    project_id: your_project_id
-    private_key_id: your_key_id_here
-    private_key: "-----BEGIN PRIVATE KEY-----\n your_key_here \n-----END PRIVATE KEY-----\n"
-    client_email: your_service_email_here@your_project.iam.gserviceaccount.com
-    client_id: your_client_id_here
-    auth_uri: https://accounts.google.com/o/oauth2/auth
-    token_uri: https://oauth2.googleapis.com/token
-    auth_provider_x509_cert_url: https://www.googleapis.com/oauth2/v1/certs
-    client_x509_cert_url: https://www.googleapis.com/robot/v1/metadata/x509/your_service_email_here%40your_project.iam.gserviceaccount.com
+  GOOGLE:
+    DRIVE:
+      LINK_TEMPLATE: https://docs.google.com/spreadsheets/d/{}/edit
+      ABONEMENT_FOLDER: VirtualCamp
+      ABONEMENT_TEMPLATE: 1RUFujBwdPGfaGK_JiWi3C3MVXuv3AdgNn13JVUgFPGc
+      ABONEMENT_FILE_NAME: abonement_{0:04d}
+      ABONEMENT_INFO_RANGE: Посещения!F2:G7
+      ABONEMENT_VISIT_START: Посещения!A2
+      ABONEMENT_VISIT_RANGE: Посещения!C2:C
+      ABONEMENT_VISIT_ROW: Посещения!A{}:D{}
+    CRED:
+      type: service_account
+      project_id: your_project_id
+      private_key_id: your_key_id_here
+      private_key: "-----BEGIN PRIVATE KEY-----\n your_key_here \n-----END PRIVATE KEY-----\n"
+      client_email: your_service_email_here@your_project.iam.gserviceaccount.com
+      client_id: your_client_id_here
+      auth_uri: https://accounts.google.com/o/oauth2/auth
+      token_uri: https://oauth2.googleapis.com/token
+      auth_provider_x509_cert_url: https://www.googleapis.com/oauth2/v1/certs
+      client_x509_cert_url: https://www.googleapis.com/robot/v1/metadata/x509/your_service_email_here%40your_project.iam.gserviceaccount.com
 
-  CRED_FTP:
+  FTP:
     server: your_server_address_here
     username: your_user_name_here
     password: your_password_here

@@ -211,6 +211,17 @@ class Database:
         await self.session.commit()
         return abonement
 
+    # Abonement add SpreadSheetId
+    async def abonement_edit_spreadsheetid(
+        self, abonement_id: int, spreadsheet_id: str
+    ) -> Optional[TgAbonement]:
+        abonement = await self.abonement_by_id(abonement_id)
+        if not abonement:
+            return None
+        abonement.spreadsheet_id = spreadsheet_id
+        await self.session.commit()
+        return abonement
+
     # Abonement delete
     async def abonement_delete(self, abonement_id: int, user_id: int) -> bool:
         abonement = await self.abonement_by_id(abonement_id)
@@ -301,13 +312,13 @@ class Database:
 
     # Abonement visit list
     async def abonement_visits_list(
-        self, abonement_id: int, limit: int, offset: int
+        self, abonement_id: int, limit: int = 1000, offset: int = 0, desc: bool = True
     ) -> Sequence[TgAbonementVisit]:
         stmt = (
             select(TgAbonementVisit)
             .options(joinedload(TgAbonementVisit.user))
             .where(TgAbonementVisit.abonement_id == abonement_id)
-            .order_by(TgAbonementVisit.ts.desc())
+            .order_by(TgAbonementVisit.ts.desc() if desc else TgAbonementVisit.ts.asc())
             .limit(limit)
             .offset(offset)
         )

@@ -340,8 +340,17 @@ async def process_good_description_abonement_command(
         )
         if abonement:
             logger.info(f"Created new abonement {abonement.id}")
+            abonement_id = abonement.id
         else:
             logger.warning("FSM: abonement: can't create new abonement")
+    # Create/update spreadsheet for Abonement
+    if abonement_id:
+        queue.publish_result(
+            {
+                "job_type": "abonement_update",
+                "abonement_id": abonement_id,
+            }
+        )
     # Reset state to Abonenment mode
     await state.clear()
     await state.set_state(MainGroup.abonement_mode)

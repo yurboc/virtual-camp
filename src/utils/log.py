@@ -21,6 +21,7 @@ def setup_logger(name: str = __name__, file: str = FILE, level: str = LEVEL):
                 file, when="midnight", backupCount=BACKUP_COUNT
             ),
         ],
+        encoding="utf-8",
     )
     logging.getLogger("googleapiclient").setLevel(logging.WARNING)
     logging.getLogger("oauth2client").setLevel(logging.WARNING)

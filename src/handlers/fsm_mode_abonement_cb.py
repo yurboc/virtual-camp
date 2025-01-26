@@ -394,6 +394,14 @@ async def callbacks_abonement_share(
     if callback.message and isinstance(callback.message, Message):
         await callback.message.edit_reply_markup(None)
         await state.set_state(MainGroup.abonement_mode)
+        if not abonement.spreadsheet_id:
+            queue.publish_result(
+                {
+                    "job_type": "abonement_update",
+                    "abonement_id": abonement.id,
+                    "user_tg_id": callback.from_user.id,
+                }
+            )
         await callback.message.answer(
             **as_list(
                 msg["ab_title"],
@@ -405,6 +413,14 @@ async def callbacks_abonement_share(
                         bot=callback.message.bot, payload=f"abonement_{abonement.token}"
                     )
                     if callback.message.bot
+                    else Bold(msg["unavailable"])
+                ),
+                msg["ab_sheets"],
+                (
+                    config["GOOGLE"]["DRIVE"]["LINK_TEMPLATE"].format(
+                        abonement.spreadsheet_id
+                    )
+                    if abonement.spreadsheet_id
                     else Bold(msg["unavailable"])
                 ),
             ).as_kwargs(),

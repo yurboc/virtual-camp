@@ -12,7 +12,7 @@ class Config:
         self.config = self.load_config(env)
 
     def load_config(self, env):
-        with open(self.config_file, "r") as file:
+        with open(self.config_file, "r", encoding="utf-8") as file:
             config_data = yaml.safe_load(file)
             return config_data.get(env, {}) if env else config_data
 

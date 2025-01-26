@@ -117,6 +117,7 @@ class TgAbonement(Base):
     __tablename__ = "tg_abonements"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, unique=True)
     token: Mapped[str] = mapped_column(String(60), index=True, unique=True)
+    spreadsheet_id: Mapped[Optional[str]]
     name: Mapped[str]
     total_visits: Mapped[int]
     expiry_date: Mapped[Optional[datetime.datetime]]
