@@ -17,7 +17,7 @@ development:
     DRIVE:
       LINK_TEMPLATE: https://docs.google.com/spreadsheets/d/{}/edit
       ABONEMENT_FOLDER: VirtualCamp
-      ABONEMENT_TEMPLATE: 1RUFujBwdPGfaGK_JiWi3C3MVXuv3AdgNn13JVUgFPGc
+      ABONEMENT_TEMPLATE: 1PlDiLsuSnbTwvowu9z3tmOzAUwuw4f6cPY2bHcMCyos
       ABONEMENT_FILE_NAME: abonement_{0:04d}
       ABONEMENT_INFO_RANGE: Посещения!F2:G7
       ABONEMENT_VISIT_START: Посещения!A2

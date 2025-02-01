@@ -146,11 +146,17 @@ class TableConverter:
         return self.spreadsheetId
 
     # Set access
-    def setAccess(self, role="commenter"):
+    def setAccess(self, role="commenter", emailAddress=None):
         logger.info("Setting access %s to %s", role, self.spreadsheetId)
+        # Select role
+        if emailAddress:
+            body = {"role": role, "type": "user", "emailAddress": emailAddress}
+        else:
+            body = {"role": role, "type": "anyone"}
+        # Set access
         self.service_drive.permissions().create(
             fileId=self.spreadsheetId,
-            body={"type": "anyone", "role": role},
+            body=body,
             fields="id",
         ).execute()
         logger.info("Done setting access")
