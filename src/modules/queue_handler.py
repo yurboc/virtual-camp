@@ -12,12 +12,12 @@ from const.formats import date_fmt, date_h_m_fmt
 from storage.db_schema import TgUser
 from storage.db_api import Database
 from utils.config import tables
-from utils.table_converter import TableConverter
+from utils.google_api import GoogleApi
 
 logger = logging.getLogger(__name__)
 
 
-class MessageSender:
+class QueueHandler:
     def __init__(self, token, admin_id, session_maker):
         self.admin_id = admin_id
         self.AsyncSessionLocal = session_maker
@@ -61,12 +61,12 @@ class MessageSender:
             if not spreadsheet_id:
                 # Create spreadsheet if not exists
                 logger.info("Abonement %s has no spreadsheet", self.abonement_id)
-                self.table.prepareFolder()
-                spreadsheet_id = self.table.createFromTemplate(abonement.name)
+                self.google.prepareFolder()
+                spreadsheet_id = self.google.createFromTemplate(abonement.name)
                 if not spreadsheet_id:
                     logger.error("Can't create spreadsheet")
                     return False
-                self.table.setAccess()
+                self.google.setAccess()
                 # Update Abonement spreadsheet id in DB
                 await db.abonement_edit_spreadsheetid(self.abonement_id, spreadsheet_id)
             # Update Abonement information in spreadsheet
@@ -75,8 +75,8 @@ class MessageSender:
             if not abonement_owner:
                 logger.warning("Abonement %s has bad owner", self.abonement_id)
                 return False
-            self.table.setSpreadsheetId(spreadsheet_id)
-            self.table.abonementUpdate(
+            self.google.setSpreadsheetId(spreadsheet_id)
+            self.google.abonementUpdate(
                 abonement.name,
                 abonement.token,
                 (
@@ -98,10 +98,14 @@ class MessageSender:
             visits = list()
             for visit in abonement_visits:
                 user = await db.user_by_id(visit.user_id)
-                if not user:
-                    continue
-                visits.append((visit.id, visit.ts.strftime(date_h_m_fmt), user.name))
-            self.table.visitsUpdateAll(visits)
+                visits.append(
+                    (
+                        visit.id,
+                        visit.ts.strftime(date_h_m_fmt),
+                        user.name if user and user.name else "",
+                    )
+                )
+            self.google.visitsUpdateAll(visits)
             # Notify user
             if not need_notify:
                 logger.info("Skip sending link to user")
@@ -117,10 +121,10 @@ class MessageSender:
                     return False
                 # Store Notification to DB
                 logger.info("Store Notification for user %s", user.id)
-                await db.notification_add(user, self.table.getLink())
+                await db.notification_add(user, self.google.getLink())
                 # Send Notification to Telegram
                 logger.info("Send notification to user %s", user.tg_id)
-                res = await self.sendText(user.tg_id, self.table.getLink())
+                res = await self.sendText(user.tg_id, self.google.getLink())
             except Exception:
                 logger.warning("Error sending to %s", self.user_tg_id, exc_info=True)
         return res
@@ -196,13 +200,17 @@ class MessageSender:
                 # Add/update/delete Abonement Visit in Google Sheet
                 if abonement.spreadsheet_id:
                     logger.info("Use Sheet ID: %s", abonement.spreadsheet_id)
-                    self.table.setSpreadsheetId(abonement.spreadsheet_id)
+                    self.google.setSpreadsheetId(abonement.spreadsheet_id)
                     if self.msg_type == "visit_new":
-                        self.table.visitAdd(visit_id, self.ts, visit_user.name)
+                        self.google.visitAdd(
+                            visit_id,
+                            self.ts,
+                            visit_user.name if visit_user and visit_user.name else "",
+                        )
                     elif self.msg_type == "visit_edit":
-                        self.table.visitUpdate(visit_id, self.ts_new)
+                        self.google.visitUpdate(visit_id, self.ts_new)
                     elif self.msg_type == "visit_delete":
-                        self.table.visitDelete(visit_id)
+                        self.google.visitDelete(visit_id)
             else:
                 logger.warning("Wrong db connection or wrong data")
                 return False
@@ -343,8 +351,8 @@ class MessageSender:
         elif msg.get("job_type") == "pictures_generator":
             self.prepare_pictures_generator_result(msg)
         elif msg.get("job_type") == "abonement_update":
-            self.table = TableConverter()
-            self.table.auth()
+            self.google = GoogleApi()
+            self.google.auth()
             self.pending = "abonement_update"
             self.abonement_id = (
                 int(msg.get("abonement_id")) if msg.get("abonement_id") else None
@@ -353,8 +361,8 @@ class MessageSender:
                 int(msg.get("user_tg_id")) if msg.get("user_tg_id") else None
             )
         elif msg.get("job_type") == "abonement_visit":
-            self.table = TableConverter()
-            self.table.auth()
+            self.google = GoogleApi()
+            self.google.auth()
             self.pending = "abonement_visit"
             self.msg_type = msg.get("msg_type")
             self.abonement_id = (

@@ -12,7 +12,7 @@ from aiogram.utils.formatting import Text, Bold, as_list, as_key_value
 from const.states import PicturesGroup
 from const.text import cmd, msg, help
 from storage.db_api import Database
-from utils import queue
+from modules import queue_publisher
 from utils.config import pictures
 
 logger = logging.getLogger(__name__)
@@ -181,7 +181,7 @@ async def process_text(
         "output_type": output_type,
     }
     logger.debug(f"FSM: pictures: task '{queue_msg}' prepared")
-    queue.publish_task(queue_msg)
+    queue_publisher.task(queue_msg)
     await message.answer(
         **as_list(msg["pictures_generating"], as_key_value("ID", task.id)).as_kwargs(),
         reply_markup=kb.go_home_kb,

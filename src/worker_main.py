@@ -3,8 +3,8 @@ import os
 import pika
 from utils.config import config
 from utils.log import setup_logger
-from utils.table_worker import TableWorker
-from utils.picture_creator import PictureCreator
+from modules.table_creator import TableCreator
+from modules.picture_creator import PictureCreator
 
 # Setup logging
 logger = setup_logger(
@@ -14,7 +14,7 @@ logger = setup_logger(
 )
 
 # Setup Table Generator
-table_worker = TableWorker()
+table_creator = TableCreator()
 
 # Setup Picture Generator
 picture_creator = PictureCreator()
@@ -34,7 +34,7 @@ def on_new_task_message(ch, method, properties, body):
     # Call handler by job type
     logger.info("Prepare handler for %s", job_type)
     if job_type == "table_generator":
-        table_worker.handle_new_task(msg)
+        table_creator.handle_new_task(msg)
     elif job_type == "pictures_generator":
         picture_creator.handle_new_task(msg)
     else:

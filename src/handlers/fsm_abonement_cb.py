@@ -11,7 +11,7 @@ from aiogram.utils.deep_linking import create_start_link
 from const.states import MainGroup, AbonementGroup
 from keyboards.inline import AbonementCallbackFactory
 from storage.db_api import Database
-from utils import queue
+from modules import queue_publisher
 from utils.config import config
 from const.text import msg
 from const.formats import date_fmt, date_h_m_fmt
@@ -155,7 +155,7 @@ async def callbacks_abonement_accept_visit(
     if callback.message and isinstance(callback.message, Message):
         if abonement_visit:  # Visit DONE
             result = [msg["ab_visit"], Bold(abonement_visit.ts.strftime(date_h_m_fmt))]
-            queue.publish_result(
+            queue_publisher.result(
                 {
                     "job_type": "abonement_visit",
                     "msg_type": "visit_new",
@@ -390,7 +390,7 @@ async def callbacks_abonement_share(
         await callback.message.edit_reply_markup(None)
         await state.set_state(MainGroup.abonement_mode)
         if not abonement.spreadsheet_id:
-            queue.publish_result(
+            queue_publisher.result(
                 {
                     "job_type": "abonement_update",
                     "abonement_id": abonement.id,

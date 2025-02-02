@@ -21,14 +21,14 @@ def publish(msg: dict, queue_name: str) -> None:
 
 
 # Publish RESULT to RabbitMQ
-def publish_result(msg: dict) -> None:
+def result(msg: dict) -> None:
     logger.info("Publishing result to queue...")
     publish(msg, "RESULTS")
     logger.info("Done publishing result to queue!")
 
 
 # Publish TASK to RabbitMQ
-def publish_task(msg: dict) -> None:
+def task(msg: dict) -> None:
     logger.info("Publishing task to queue...")
     publish(msg, "TASKS")
     logger.info("Done publishing task to queue!")

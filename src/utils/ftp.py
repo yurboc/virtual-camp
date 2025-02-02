@@ -6,7 +6,7 @@ from utils.config import config
 logger = logging.getLogger(__name__)
 
 
-class FtpUploader:
+class Ftp:
     def __init__(self):
         self.session = None
 

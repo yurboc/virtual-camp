@@ -11,7 +11,7 @@ from aiogram.fsm.state import default_state
 from aiogram.utils.formatting import Text, as_list, as_key_value
 from const.states import MainGroup
 from storage.db_api import Database
-from utils import queue
+from modules import queue_publisher
 from utils.config import tables
 from const.text import cmd, msg, help
 
@@ -78,7 +78,7 @@ async def process_selected_table(
         "job_type": "table_generator",
         "job": job,
     }
-    queue.publish_task(queue_msg)
+    queue_publisher.task(queue_msg)
     await message.answer(
         **as_list(msg["table_generating"], as_key_value("ID", task.id)).as_kwargs(),
         reply_markup=kb.go_home_kb,

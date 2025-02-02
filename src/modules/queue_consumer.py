@@ -3,36 +3,34 @@ import pika
 import logging
 import logging.handlers
 from pika.adapters.asyncio_connection import AsyncioConnection
-from utils.message_sender import MessageSender
+from modules.queue_handler import QueueHandler
 
 logger = logging.getLogger(__name__)
 
 
-class MessageExtractor:
+class QueueConsumer:
     def __init__(self, url, queue_name, bot_token, admin_id, session_maker):
         self.url = url
         self.queue_name = queue_name
         self.connection = None
         self.channel = None
-        self.sender = MessageSender(bot_token, admin_id, session_maker)
+        self.handler = QueueHandler(bot_token, admin_id, session_maker)
 
     # Handle messages from RabbitMQ queue
     async def on_message_async(self, channel, method, properties, body):
         logger.info("Async handler started...")
-        self.sender.convert_rabbitmq_message(body)  # sync handler (first)
+        self.handler.convert_rabbitmq_message(body)  # sync handler (first)
         logger.info("Create notification...")
-        await self.sender.create_notification()  # async handler (second)
+        await self.handler.create_notification()  # async handler (second)
         channel.basic_ack(delivery_tag=method.delivery_tag)
         logger.info("Message acked")
 
-    # Start RabbitMQ consumer
     async def start(self):
         logger.info("Create connection...")
         self.connection = self.connect()
         logger.info("Connection created")
         await asyncio.Future()  # Keep the event loop running
 
-    # Close RabbitMQ connection
     def stop(self):
         if self.connection and not self.connection.is_closed:
             self.connection.close()

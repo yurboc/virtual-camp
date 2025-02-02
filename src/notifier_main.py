@@ -4,7 +4,7 @@ from sqlalchemy import URL
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from utils.config import config
 from storage.db_schema import Base
-from utils.message_extractor import MessageExtractor
+from modules.queue_consumer import QueueConsumer
 from utils.log import setup_logger
 
 # Setup logging
@@ -36,7 +36,7 @@ async def main():
 
     # Setup RabbitMQ consumer
     logger.info("Starting RabbitMQ consumer...")
-    client = MessageExtractor(
+    consumer = QueueConsumer(
         url=config["RABBITMQ"]["URL"],
         queue_name=config["RABBITMQ"]["QUEUES"]["RESULTS"],
         bot_token=config["BOT"]["TOKEN"],
@@ -44,10 +44,10 @@ async def main():
         session_maker=AsyncSessionLocal,
     )
     logger.info("Worker started, waiting for messages...")
-    await client.start()
+    await consumer.start()
 
     # Exit
-    client.stop()
+    consumer.stop()
     logger.info("Finished queue notifier!")
 
 

@@ -21,7 +21,7 @@ from datetime import datetime
 from const.states import MainGroup, AbonementGroup
 from storage.db_api import Database
 from utils.config import config
-from utils import queue
+from modules import queue_publisher
 from const.text import cmd, msg, help
 from const.formats import re_uuid, date_fmt, date_h_m_fmt
 from modules.msg_creator import ab_del
@@ -349,7 +349,7 @@ async def process_good_description_abonement_command(
             logger.warning("FSM: abonement: can't create new abonement")
     # Create/update spreadsheet for Abonement
     if abonement_id:
-        queue.publish_result(
+        queue_publisher.result(
             {
                 "job_type": "abonement_update",
                 "abonement_id": abonement_id,
@@ -573,7 +573,7 @@ async def process_visit_edit_command(
     # Set Visit date
     result = await db.abonement_visit_update(visit_id, user_id, visit_date)
     if result:
-        queue.publish_result(
+        queue_publisher.result(
             {
                 "job_type": "abonement_visit",
                 "msg_type": "visit_edit",
@@ -609,7 +609,7 @@ async def process_visit_delete_command(
         result = await db.abonement_visit_delete(visit_id=visit_id, user_id=user_id)
         logger.info("FSM: abonement: visit %s deleted: %s", visit_id, result)
         if result:
-            queue.publish_result(
+            queue_publisher.result(
                 {
                     "job_type": "abonement_visit",
                     "msg_type": "visit_delete",

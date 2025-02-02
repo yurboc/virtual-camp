@@ -2,7 +2,7 @@ import os
 import logging
 import tempfile
 from PIL import Image, ImageDraw, ImageFont
-from utils import queue
+from modules import queue_publisher
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +115,7 @@ class PictureCreator:
             msg["uuid"] = msg.get("uuid", "no_uuid")
             msg["image"] = generated_image_path
             msg["result"] = "done"
-            queue.publish_result(msg)
+            queue_publisher.result(msg)
             logger.info("Result: {}".format(msg))
             logger.info("Done image generating!")
         except Exception as e:

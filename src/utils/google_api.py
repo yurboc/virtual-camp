@@ -4,19 +4,21 @@ import logging
 import apiclient.discovery
 from dateutil import parser
 from google.oauth2.service_account import Credentials
+from typing import Optional, Tuple, List
 from utils.config import config
 from const.formats import date_h_m_s_fmt
 
 logger = logging.getLogger(__name__)
 
 
-class TableConverter:
-    def __init__(self):
-        self.spreadsheetId = None
-        self.spreadsheetRange = None
-        self.rawData = None
+class GoogleApi:
+    def __init__(self) -> None:
+        self.spreadsheetId: Optional[str] = None
+        self.spreadsheetRange: Optional[str] = None
+        self.rawData: Optional[dict] = None
 
-    def auth(self):
+    # Authenticate to Google
+    def auth(self) -> None:
         # Read credentials from file
         logger.info("Authenticating to Google...")
         credentials = Credentials.from_service_account_info(
@@ -35,13 +37,16 @@ class TableConverter:
         )
         logger.info("Done authenticating to Google")
 
-    def setSpreadsheetId(self, spreadsheetId):
+    # Set spreadsheet ID
+    def setSpreadsheetId(self, spreadsheetId: str) -> None:
         self.spreadsheetId = spreadsheetId
 
-    def setSpreadsheetRange(self, spreadsheetRange):
+    # Set spreadsheet range
+    def setSpreadsheetRange(self, spreadsheetRange: str) -> None:
         self.spreadsheetRange = spreadsheetRange
 
-    def readTable(self):
+    # Read spreadsheet data
+    def readSpreadsheet(self) -> None:
         logger.info(f"Reading table {self.spreadsheetId}...")
         self.rawData = (
             self.service_sheets.spreadsheets()
@@ -51,7 +56,8 @@ class TableConverter:
         )
         logger.info(f"Done reading table {self.spreadsheetId}")
 
-    def parseData(self, fields):
+    # Parse spreadsheet data
+    def parseSpreadsheet(self, fields: list[str]) -> None:
         logger.info("Parsing data...")
         self.combinedData = list()
         # Iterate over rows
@@ -83,7 +89,8 @@ class TableConverter:
         logger.info(f"Generation date: {self.generationDate}")
         logger.info(f"Lines count: {len(self.combinedData)}")
 
-    def saveToFile(self, filename):
+    # Save spreadsheet data to JS file
+    def saveSpreadsheetToJs(self, filename: str) -> None:
         logger.info("Saving to file...")
         with open(filename, "w") as f:
             f.write("var php_data = ")
@@ -95,7 +102,7 @@ class TableConverter:
             f.write(f'var generated_date="{self.generationDate}";\n')
         logger.info(f"Saved to file: {filename}")
 
-    # Prepare folder for VirtualCamp
+    # Prepare folder for VirtualCamp sheets
     def prepareFolder(self) -> str:
         folder_name = config["GOOGLE"]["DRIVE"]["ABONEMENT_FOLDER"]
         logger.info("Preparing folder %s...", folder_name)
@@ -133,8 +140,8 @@ class TableConverter:
         logger.info(f"Folder created, ID: {self.currentFolder}")
         return self.currentFolder
 
-    # Create from Template
-    def createFromTemplate(self, name) -> str:
+    # Create spreadsheet from template
+    def createFromTemplate(self, name) -> Optional[str]:
         template = config["GOOGLE"]["DRIVE"]["ABONEMENT_TEMPLATE"]
         logger.info("Creating table %s from template %s", name, template)
         copy_body = {"name": name}
@@ -147,8 +154,10 @@ class TableConverter:
         logger.info("Done creating table: %s", self.spreadsheetId)
         return self.spreadsheetId
 
-    # Set access
-    def setAccess(self, role="commenter", emailAddress=None):
+    # Set access to spreadsheet
+    def setAccess(
+        self, role: str = "commenter", emailAddress: Optional[str] = None
+    ) -> None:
         logger.info("Setting access %s to %s", role, self.spreadsheetId)
         # Select role
         if emailAddress:
@@ -168,7 +177,7 @@ class TableConverter:
         return config["GOOGLE"]["DRIVE"]["LINK_TEMPLATE"].format(self.spreadsheetId)
 
     # Delete file
-    def deleteFile(self, spreadsheetId=None):
+    def deleteFile(self, spreadsheetId: Optional[str] = None) -> None:
         if not spreadsheetId:
             spreadsheetId = self.spreadsheetId
         logger.info("Deleting file %s", spreadsheetId)
@@ -176,7 +185,7 @@ class TableConverter:
         logger.info("Done deleting file")
 
     # List Files and Folders
-    def listItems(self):
+    def listItems(self) -> None:
         results = (
             self.service_drive.files()
             .list(fields="files(id, name, parents, mimeType)")
@@ -215,8 +224,14 @@ class TableConverter:
 
     # Fill Abonement Info
     def abonementUpdate(
-        self, abonement_name, token, expiry_date, total_visits, description, owner_name
-    ):
+        self,
+        abonement_name: Optional[str],
+        token: Optional[str],
+        expiry_date: Optional[str],
+        total_visits: Optional[int | str],
+        description: Optional[str],
+        owner_name: Optional[str],
+    ) -> None:
         # Update fields
         self.service_sheets.spreadsheets().values().batchUpdate(
             spreadsheetId=self.spreadsheetId,
@@ -246,7 +261,7 @@ class TableConverter:
         logger.info("Done rename file")
 
     # Add Visit to Abonement
-    def visitAdd(self, visit_id, date, user_name):
+    def visitAdd(self, visit_id: int, date: str, user_name: str) -> None:
         logger.info("Add Visit to Abonement...")
         # Update fields
         self.service_sheets.spreadsheets().values().append(
@@ -259,7 +274,7 @@ class TableConverter:
         logger.info("Done updating table")
 
     # Visit Update
-    def visitUpdate(self, visit_id, visit_new_ts):
+    def visitUpdate(self, visit_id: int, visit_new_ts: str) -> None:
         logger.info("Update Visit in Abonement...")
 
         # Find current Visit
@@ -283,7 +298,7 @@ class TableConverter:
         logger.info("Done update Visit in Abonement")
 
     # Visit Delete
-    def visitDelete(self, visit_id):
+    def visitDelete(self, visit_id: int) -> None:
         logger.info("Update Visit in Abonement...")
 
         # Find current Visit
@@ -294,7 +309,7 @@ class TableConverter:
         row_id, row = res
 
         # Update deleted Visit
-        row[3] = 0
+        row[3] = "0"
         self.updateRowValues(
             config["GOOGLE"]["DRIVE"]["ABONEMENT_VISIT_ROW"].format(
                 row_id + 1, row_id + 1
@@ -307,7 +322,7 @@ class TableConverter:
         logger.info("Done update Visit in Abonement")
 
     # Find Visit Row by ID
-    def findVisitById(self, visit_id):
+    def findVisitById(self, visit_id: int) -> Optional[Tuple[int, List[str]]]:
         results = (
             self.service_sheets.spreadsheets()
             .values()
@@ -333,7 +348,7 @@ class TableConverter:
         return found_row_id, found_row
 
     # Update Row Values
-    def updateRowValues(self, range, values):
+    def updateRowValues(self, range: str, values: List[List[str]]) -> None:
         self.service_sheets.spreadsheets().values().batchUpdate(
             spreadsheetId=self.spreadsheetId,
             body={
@@ -343,7 +358,9 @@ class TableConverter:
         ).execute()
 
     # Update Row Color
-    def updateRowColor(self, row, col, color):
+    def updateRowColor(
+        self, row: List[int], col: List[int], color: List[float]
+    ) -> None:
         self.service_sheets.spreadsheets().batchUpdate(
             spreadsheetId=self.spreadsheetId,
             body={
@@ -375,7 +392,7 @@ class TableConverter:
         ).execute()
 
     # Update Visits for Abonement
-    def visitsUpdateAll(self, visits):
+    def visitsUpdateAll(self, visits: List[Tuple[int, str, str]]) -> None:
         logger.info("Sync Visits for Abonement...")
         # Get current Visits
         results = (
