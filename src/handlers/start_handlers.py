@@ -1,5 +1,5 @@
 import logging
-import keyboards.common as kb
+import keyboards.reply as kb
 import re
 from aiogram import Router
 from aiogram.types import Message
@@ -7,7 +7,8 @@ from aiogram.filters import CommandStart, CommandObject, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from aiogram.utils.formatting import Bold, Italic, as_list
-from const.text import msg, re_uuid
+from const.text import msg
+from const.formats import re_uuid
 from modules import deep_linking as dl
 from storage.db_api import Database
 

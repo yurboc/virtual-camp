@@ -1,5 +1,5 @@
 import logging
-import keyboards.common as kb
+import keyboards.reply as kb
 import re
 from aiogram import F, Router
 from aiogram.types import Message
@@ -22,7 +22,9 @@ from const.states import MainGroup, AbonementGroup
 from storage.db_api import Database
 from utils.config import config
 from utils import queue
-from const.text import cmd, msg, help, ab_del, re_uuid, date_fmt, date_h_m_fmt
+from const.text import cmd, msg, help
+from const.formats import re_uuid, date_fmt, date_h_m_fmt
+from modules.msg_creator import ab_del
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)

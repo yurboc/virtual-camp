@@ -2,7 +2,7 @@ from aiogram.utils.formatting import Text, Bold, as_list
 from const.text import help
 
 
-def generate_top_level_help(user_type: list[str] = ["unknown"]) -> Text:
+def top_level_help(user_type: list[str] = ["unknown"]) -> Text:
     tokens: list[Text] = []
     # Common commands
     tokens.append(Bold(help["all_cmd"]))

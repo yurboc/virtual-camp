@@ -1,5 +1,6 @@
 import logging
-import keyboards.common as kb
+import keyboards.reply as kb
+import keyboards.inline as ikb
 from aiogram import F, Router
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import StateFilter
@@ -8,19 +9,13 @@ from aiogram.fsm.context import FSMContext
 from aiogram.utils.formatting import Text, Bold, Italic, TextLink, as_list, as_key_value
 from aiogram.utils.deep_linking import create_start_link
 from const.states import MainGroup, AbonementGroup
-from keyboards.common import AbonementCallbackFactory
+from keyboards.inline import AbonementCallbackFactory
 from storage.db_api import Database
 from utils import queue
 from utils.config import config
-from const.text import (
-    msg,
-    ab_info,
-    ab_page,
-    ab_del_ask,
-    ab_del_visit_ask,
-    date_h_m_fmt,
-    date_fmt,
-)
+from const.text import msg
+from const.formats import date_fmt, date_h_m_fmt
+from modules.msg_creator import ab_info, ab_page, ab_del_ask, ab_del_visit_ask
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)
@@ -67,7 +62,7 @@ async def callbacks_abonement_open(
                 my_visits_count,
                 notify,
             ).as_kwargs(),
-            reply_markup=kb.get_abonement_control_kb(abonement, user.id, notify),
+            reply_markup=ikb.get_abonement_control_kb(abonement, user.id, notify),
         )
 
 
@@ -121,7 +116,7 @@ async def callbacks_abonement_ask_visit(
         result = [msg["ab_visit_ask"], Bold(abonement.name), msg["ab_visit_confirm"]]
         await callback.message.answer(
             **as_list(*result).as_kwargs(),
-            reply_markup=kb.get_abonement_yes_no_kb(abonement),
+            reply_markup=ikb.get_abonement_yes_no_kb(abonement),
         )
 
 
@@ -243,7 +238,7 @@ async def callbacks_abonement_visits(
             # Update message for << and >> buttons only
             await callback.message.edit_text(
                 **answer.as_kwargs(),
-                reply_markup=kb.get_abonement_history_kb(
+                reply_markup=ikb.get_abonement_history_kb(
                     abonement, offset, limit, total
                 ),
             )
@@ -251,7 +246,7 @@ async def callbacks_abonement_visits(
             # Create new message for all other buttons
             await callback.message.answer(
                 **answer.as_kwargs(),
-                reply_markup=kb.get_abonement_history_kb(
+                reply_markup=ikb.get_abonement_history_kb(
                     abonement, offset, limit, total
                 ),
             )
@@ -301,7 +296,7 @@ async def callbacks_abonement_edit_delete_select_visits(
         await callback.message.edit_reply_markup(None)
         await callback.message.answer(
             **answer.as_kwargs(),
-            reply_markup=kb.get_abonement_visits_kb(abonement, visits_list, action),
+            reply_markup=ikb.get_abonement_visits_kb(abonement, visits_list, action),
         )
 
 
@@ -575,5 +570,5 @@ async def callbacks_abonement_notify(
             notify_text = msg["notify_off"]
         await callback.message.answer(
             **as_list(Bold(abonement.name), notify_text).as_kwargs(),
-            reply_markup=kb.get_abonement_control_kb(abonement, user.id, notify),
+            reply_markup=ikb.get_abonement_control_kb(abonement, user.id, notify),
         )

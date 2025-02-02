@@ -28,9 +28,7 @@ def on_new_task_message(ch, method, properties, body):
         msg = json.loads(body.decode())
         job_type = msg.get("job_type", "no_job_type")
     except Exception:
-        logger.warning(
-            f"Error decoding incoming message: {body.decode()}", exc_info=True
-        )
+        logger.error(f"Error decoding incoming message: {body.decode()}", exc_info=True)
         ch.basic_ack(delivery_tag=method.delivery_tag)
         return
     # Call handler by job type
@@ -40,7 +38,7 @@ def on_new_task_message(ch, method, properties, body):
     elif job_type == "pictures_generator":
         picture_creator.handle_new_task(msg)
     else:
-        logger.warning("Unknown job type: %s", job_type)
+        logger.error("Unknown job type: %s", job_type)
     ch.basic_ack(delivery_tag=method.delivery_tag)
     logger.info("Done handler for %s", job_type)
 

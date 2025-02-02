@@ -1,6 +1,6 @@
 import logging
 import uuid
-import keyboards.common as kb
+import keyboards.reply as kb
 from typing import Optional
 from aiogram import F, Router
 from aiogram.types import Message
@@ -12,7 +12,8 @@ from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.formatting import Bold, Code, as_list, as_key_value
 from storage.db_api import Database
 from const.states import InvitesGroup
-from const.text import cmd, msg, help, user_types, date_h_m_s_fmt
+from const.text import cmd, msg, help, date_h_m_s_fmt
+from const.groups import groups
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)
@@ -23,7 +24,7 @@ router = Router(name=__name__)
 
 # Get possible groups
 possible_groups = []
-for _, v in user_types.items():
+for _, v in groups.items():
     possible_groups.append(v)
 
 
@@ -31,7 +32,7 @@ for _, v in user_types.items():
 def get_group_by_name(group_name: Optional[str]) -> Optional[str]:
     if group_name is None:
         return None
-    for k, v in user_types.items():
+    for k, v in groups.items():
         if v == group_name:
             return k
     return None
@@ -131,7 +132,7 @@ async def process_history_command(
         res_items.append(
             as_list(
                 "",
-                as_key_value(invite.group, user_types[invite.group]),
+                as_key_value(invite.group, groups[invite.group]),
                 invite.ts_created.strftime(date_h_m_s_fmt),
                 Code(invite.token),
                 as_key_value(msg["invites_users"], len(users)),

@@ -1,7 +1,7 @@
 import os
 import logging
 from utils.table_converter import TableConverter
-from utils.table_uploader import TableUploader
+from utils.ftp import FtpUploader
 from utils import queue
 from utils.config import config, tables
 
@@ -28,7 +28,7 @@ class TableWorker:
         logger.info(f"Done table: {table_params['generator_name']}")
 
     # Upload generated JavaScript file to FTP
-    def upload_table(self, uploader: TableUploader, table_params: dict) -> None:
+    def upload_table(self, uploader: FtpUploader, table_params: dict) -> None:
         logger.info(f"Uploading file: {table_params['output_file']}")
         uploader.upload(table_params, local_dir=config["TABLE_CONVERTER"]["OUTPUT_DIR"])
         logger.info(f"Uploaded file: {table_params['output_file']}")
@@ -39,7 +39,7 @@ class TableWorker:
         msg_job = msg.get("job", "no_job")
         logger.info(f"Prepare job '{msg_job}'...")
         converter = TableConverter()
-        uploader = TableUploader()
+        uploader = FtpUploader()
         converter.auth()
         uploader.start()
         for table_params in tables:

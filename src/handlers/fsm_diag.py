@@ -1,6 +1,6 @@
 import logging
 import subprocess
-import keyboards.common as kb
+import keyboards.reply as kb
 import requests
 from aiogram import F, Router
 from aiogram.types import Message
@@ -8,20 +8,14 @@ from aiogram.filters import Command, StateFilter
 from aiogram.filters import or_f
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
-from aiogram.utils.formatting import (
-    Text,
-    Bold,
-    Pre,
-    Code,
-    as_list,
-    as_key_value,
-    as_numbered_section,
-    as_marked_section,
-)
+from aiogram.utils.formatting import Text, Bold, Pre, Code
+from aiogram.utils.formatting import as_list, as_key_value
+from aiogram.utils.formatting import as_numbered_section, as_marked_section
 from requests.auth import HTTPBasicAuth
 from const.states import MainGroup
 from storage.db_api import Database
-from const.text import cmd, msg, help, user_types
+from const.text import cmd, msg, help
+from const.groups import groups
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)
@@ -57,7 +51,7 @@ def get_rabbitmq_queues_status(
                 f" messages={queue['messages']}, consumers={queue['consumers']}"
             )
     except requests.exceptions.RequestException as e:
-        logger.warning(f"Error connecting to RabbitMQ: {e}")
+        logger.error(f"Error connecting to RabbitMQ: {e}")
     return result
 
 
@@ -107,7 +101,7 @@ async def process_info_command(
     # Get user info
     user = await db.user_by_id(user_id)
     access_list: list[Text] = []
-    for k, v in user_types.items():
+    for k, v in groups.items():
         if k in user_type:
             access_list.append(Text(msg["m_yes"], v))
         else:

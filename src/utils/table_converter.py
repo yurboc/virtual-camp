@@ -5,7 +5,7 @@ import apiclient.discovery
 from dateutil import parser
 from google.oauth2.service_account import Credentials
 from utils.config import config
-from const.text import date_h_m_s_fmt
+from const.formats import date_h_m_s_fmt
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +55,8 @@ class TableConverter:
         logger.info("Parsing data...")
         self.combinedData = list()
         # Iterate over rows
+        if not self.rawData:
+            return
         for rowData in self.rawData["values"]:
             tmpRow: dict[str, str] = dict()
             # Iterate over columns

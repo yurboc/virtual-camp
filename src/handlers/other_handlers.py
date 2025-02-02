@@ -3,8 +3,9 @@ from aiogram import F, Router
 from aiogram.types import Message, ErrorEvent
 from aiogram.filters import Command
 from aiogram.utils.formatting import as_list
-from const.text import msg, re_uuid
-from modules.help_menu import generate_top_level_help
+from const.text import msg
+from const.formats import re_uuid
+from modules.help_creator import top_level_help
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)
@@ -30,7 +31,7 @@ async def send_cancel_answer(message: Message):
 @router.message(Command("help"))
 async def process_help_command(message: Message, user_type: list[str]) -> None:
     logger.info("Got HELP command")
-    help = generate_top_level_help(user_type)
+    help = top_level_help(user_type)
     await message.answer(**help.as_kwargs())
 
 
@@ -46,4 +47,4 @@ async def send_default_answer(message: Message):
 # Handle Telegram errors
 @router.error()
 async def error_handler(event: ErrorEvent):
-    logger.warning("Unhandled error caused by %s", event.exception, exc_info=True)
+    logger.error("Unhandled error caused by %s", event.exception, exc_info=True)

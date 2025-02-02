@@ -52,10 +52,10 @@ class MessageExtractor:
         self.connection.channel(on_open_callback=self.on_channel_open)
 
     def on_connection_error(self, connection_unused, error_message=None):
-        logger.warning(f"Connection failed: {error_message}")
+        logger.error(f"Connection failed: {error_message}")
 
     def on_connection_closed(self, connection, reason):
-        logger.warning(f"Connection closed: {reason}")
+        logger.error(f"Connection closed: {reason}")
         self.stop()
 
     def on_channel_open(self, channel):

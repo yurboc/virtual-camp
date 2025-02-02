@@ -1,5 +1,5 @@
 import logging
-import keyboards.common as kb
+import keyboards.reply as kb
 from aiogram import F, Router
 from aiogram.types import Message
 from aiogram.filters import Command, StateFilter
@@ -9,16 +9,8 @@ from aiogram.fsm.state import default_state
 from aiogram.utils.formatting import Bold, as_list
 from const.states import RegisterGroup
 from storage.db_api import Database
-from const.text import (
-    cmd,
-    msg,
-    help,
-    reg_main,
-    reg_main_edit,
-    reg_end,
-    reg_phone,
-    reg_name,
-)
+from const.text import cmd, msg, help
+from modules.msg_creator import reg_main, reg_main_edit, reg_end, reg_phone, reg_name
 
 logger = logging.getLogger(__name__)
 router = Router(name=__name__)

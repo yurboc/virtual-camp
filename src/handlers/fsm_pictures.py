@@ -1,6 +1,6 @@
 import logging
 import uuid
-import keyboards.common as kb
+import keyboards.reply as kb
 from typing import Optional
 from aiogram import F, Router
 from aiogram.types import Message

@@ -7,7 +7,8 @@ from aiogram.enums import ParseMode
 from aiogram.types import FSInputFile
 from aiogram.client.default import DefaultBotProperties
 from aiogram.utils.formatting import Text, TextLink, as_key_value, as_list
-from const.text import msg, date_fmt, date_h_m_fmt
+from const.text import msg
+from const.formats import date_fmt, date_h_m_fmt
 from storage.db_schema import TgUser
 from storage.db_api import Database
 from utils.config import tables
@@ -48,6 +49,9 @@ class MessageSender:
         # Get data from DB
         async with self.AsyncSessionLocal() as session:
             db = Database(session=session)
+            if not self.abonement_id:
+                logger.warning("Abonement ID not set")
+                return False
             abonement = await db.abonement_by_id(self.abonement_id)
             if not abonement or abonement.hidden:
                 logger.warning("Abonement %s bad", self.abonement_id)
@@ -60,7 +64,7 @@ class MessageSender:
                 self.table.prepareFolder()
                 spreadsheet_id = self.table.createFromTemplate(abonement.name)
                 if not spreadsheet_id:
-                    logger.warning("Can't create spreadsheet")
+                    logger.error("Can't create spreadsheet")
                     return False
                 self.table.setAccess()
                 # Update Abonement spreadsheet id in DB
@@ -104,6 +108,9 @@ class MessageSender:
                 return True
             logger.info("Notify user")
             try:
+                if not self.user_tg_id:
+                    logger.warning("User Telegram ID not set")
+                    return False
                 user = await db.user_by_tg_id(self.user_tg_id)
                 if not user:
                     logger.warning("User %s not found", self.user_tg_id)
@@ -176,6 +183,9 @@ class MessageSender:
                 else:
                     logger.warning("Abonement Visit %s bad", visit_id)
                 # Get Abonement Visit User
+                if not self.visit_user_id:
+                    logger.warning("Visit User not set")
+                    return False
                 visit_user_id = self.visit_user_id
                 visit_user = await db.user_by_id(visit_user_id)
                 if visit_user:
