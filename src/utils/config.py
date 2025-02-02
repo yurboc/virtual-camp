@@ -7,16 +7,16 @@ PICTURES_CONFIG = os.path.join("config", "pictures.yaml")
 
 
 class Config:
-    def __init__(self, config_file, env=None):
+    def __init__(self, config_file):
         self.config_file = config_file
-        self.config = self.load_config(env)
+        self.config = self.load_config()
 
-    def load_config(self, env):
+    def load_config(self):
         with open(self.config_file, "r", encoding="utf-8") as file:
             config_data = yaml.safe_load(file)
-            return config_data.get(env, {}) if env else config_data
+            return config_data
 
 
-config = Config(config_file=MAIN_CONFIG, env=os.getenv("APP_ENV", "development")).config
+config = Config(config_file=MAIN_CONFIG).config
 tables = Config(config_file=TABLES_CONFIG).config
 pictures = Config(config_file=PICTURES_CONFIG).config
