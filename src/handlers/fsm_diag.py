@@ -11,9 +11,10 @@ from aiogram.fsm.state import default_state
 from aiogram.utils.formatting import Text, Bold, Pre, Code
 from aiogram.utils.formatting import as_list, as_key_value
 from aiogram.utils.formatting import as_numbered_section, as_marked_section
+from datetime import datetime
 from requests.auth import HTTPBasicAuth
-from const.states import MainGroup
 from storage.db_api import Database
+from const.states import MainGroup
 from const.text import cmd, msg, help
 from const.groups import groups
 
@@ -109,12 +110,15 @@ async def process_info_command(
     # Get bot info
     version = get_bot_version()
     state_name = await state.get_state()
+    bot_name = (await message.bot.get_my_name()).name if message.bot else "unknown"
     # Create message
     content = as_list(
         as_marked_section(
             Bold(msg["diag_sys_info"]),
             as_key_value(msg["diag_version"], Code(version)),
             as_key_value(msg["diag_state"], Code(state_name)),
+            as_key_value(msg["diag_time"], Code(datetime.now().isoformat())),
+            as_key_value(msg["diag_bot"], Code(bot_name)),
         ),
         "",
         as_marked_section(
@@ -130,7 +134,7 @@ async def process_info_command(
         ),
         "",
         Bold(msg["diag_db_info"]),
-        Pre(user),
+        Pre(user, language="Text"),
         "",
         Bold(msg["diag_rabbitmq_info"]),
         Code(as_list(*get_rabbitmq_queues_status())),

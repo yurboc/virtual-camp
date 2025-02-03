@@ -162,6 +162,8 @@ msg: dict[str, str] = {
     "diag_sys_info": "Информация о системе",
     "diag_version": "Версия",
     "diag_state": "Режим",
+    "diag_time": "Время",
+    "diag_bot": "Бот",
     "diag_bot_info": "Информация о пользователе в aiogram",
     "diag_db_info": "Информация о пользователе в БД",
     "diag_rabbitmq_info": "Информация об очередях",
@@ -206,11 +208,11 @@ msg: dict[str, str] = {
 
 # Help messages
 help: dict[str, str] = {
-    "all_cmd": "Общие команды",
+    "all_group": "Общие команды",
     "all_start": "/start - запуск бота",
     "all_help": "/help - справка по текущему режиму",
     "all_cancel": "/cancel - выход из текущего режима",
-    "my_cmd": "Вам доступны режимы",
+    "my_group": "Вам доступны режимы",
     "my_diag": "/diag - диагностика бота",
     "my_info": "/info - текущее состояние",
     "my_register": "/register - регистрация пользователя",
@@ -219,6 +221,10 @@ help: dict[str, str] = {
     "my_tables": "/tables - генерация таблиц ФСТ-ОТМ",
     "my_pictures": "/pictures - генерация обложек YouTube",
     "my_abonement": "/abonement - подсчет посещений абонементов",
+    "owner_group": "Информация о боте",
+    "owner_info": "По всем вопросам пишите @botsev_yury",
+    "owner_github": "Или сами смотрите код на GitHub",
+    "owner_link": "https://github.com/yurboc/virtual-camp",
     "diag_cmd": "Режим диагностики",
     "diag_info": "/info - информация о пользователе",
     "reg_cmd": "Режим регистрации",
