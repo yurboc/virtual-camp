@@ -42,53 +42,8 @@ async def on_startup(bot: Bot) -> None:
     )
 
 
-# MAIN
-async def async_main() -> None:
-    logger.info(f"Starting VirtualCampBot with PID={os.getpid()}...")
-
-    # Setup DB
-    db_url = URL.create(
-        config["DB"]["TYPE"],
-        username=config["DB"]["USERNAME"],
-        password=config["DB"]["PASSWORD"],
-        host=config["DB"]["HOST"],
-        database=config["DB"]["NAME"],
-    )
-    async_engine: AsyncEngine = create_async_engine(db_url, echo=False)
-
-    # Create DB structures
-    async with async_engine.begin() as conn:
-        # DROP TABLES: await conn.run_sync(db_schema.Base.metadata.drop_all)
-        await conn.run_sync(db_schema.Base.metadata.create_all)
-
-    # Create internal objects
-    redis = Redis(host="localhost")
-    storage = RedisStorage(redis=redis)
-    async_session = async_sessionmaker(async_engine, expire_on_commit=False)
-    bot = Bot(
-        token=config["BOT"]["TOKEN"],
-        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
-    )
-    dp = Dispatcher(storage=storage, engine=async_engine)
-
-    # Add routers
-    dp.include_router(start_handlers.router)  # START and deep-linking
-    dp.include_router(fsm_diag.router)  # Diag mode
-    dp.include_router(fsm_register.router)  # Register user
-    dp.include_router(fsm_invites.router)  # Invite user
-    dp.include_router(fsm_tables.router)  # FST-OTM tables generator
-    dp.include_router(fsm_pictures.router)  # Picture  generation mode
-    dp.include_router(fsm_abonement_cb.router)  # Abonement: callbacks
-    dp.include_router(fsm_abonement.router)  # Abonement: messages
-    dp.include_router(other_handlers.router)  # Other messages
-
-    # Add middleware
-    dp.update.outer_middleware(DatabaseMiddleware(session=async_session))
-    dp.update.outer_middleware(StoreAllUpdates())
-    dp.message.outer_middleware(CheckUserType())
-    dp.message.middleware(StoreAllMessages())
-
-    # Configure webhook
+# Configure and start webhook
+async def start_as_webhook(dp: Dispatcher, bot: Bot) -> None:
     logger.info("Setting up webhook...")
 
     # Register startup hook to initialize webhook
@@ -122,7 +77,66 @@ async def async_main() -> None:
     await site.start()
 
     # wait forever
+    logger.info("Bot started!")
     await asyncio.Event().wait()
+
+
+# MAIN
+async def async_main() -> None:
+    logger.info("Starting bot with PID=%d...", os.getpid())
+
+    # Setup DB
+    db_url = URL.create(
+        config["DB"]["TYPE"],
+        username=config["DB"]["USERNAME"],
+        password=config["DB"]["PASSWORD"],
+        host=config["DB"]["HOST"],
+        database=config["DB"]["NAME"],
+    )
+    async_engine: AsyncEngine = create_async_engine(db_url, echo=False)
+
+    # Create DB structures
+    async with async_engine.begin() as conn:
+        # DROP TABLES: await conn.run_sync(db_schema.Base.metadata.drop_all)
+        await conn.run_sync(db_schema.Base.metadata.create_all)
+
+    # Create internal objects
+    redis = Redis(host="localhost")
+    storage = RedisStorage(redis=redis)
+    async_session = async_sessionmaker(async_engine, expire_on_commit=False)
+    bot = Bot(
+        token=config["BOT"]["TOKEN"],
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+    )
+    dp = Dispatcher(storage=storage, engine=async_engine, bot=bot)
+    bot_name = await bot.get_my_name()
+    logger.info("Created bot %s", bot_name)
+
+    # Add routers
+    dp.include_router(start_handlers.router)  # START and deep-linking
+    dp.include_router(fsm_diag.router)  # Diag mode
+    dp.include_router(fsm_register.router)  # Register user
+    dp.include_router(fsm_invites.router)  # Invite user
+    dp.include_router(fsm_tables.router)  # FST-OTM tables generator
+    dp.include_router(fsm_pictures.router)  # Picture  generation mode
+    dp.include_router(fsm_abonement_cb.router)  # Abonement: callbacks
+    dp.include_router(fsm_abonement.router)  # Abonement: messages
+    dp.include_router(other_handlers.router)  # Other messages
+
+    # Add middleware
+    dp.update.outer_middleware(DatabaseMiddleware(session=async_session))
+    dp.update.outer_middleware(StoreAllUpdates())
+    dp.message.outer_middleware(CheckUserType())
+    dp.message.middleware(StoreAllMessages())
+
+    # Select bot mode
+    if config["BOT"]["MODE"] == "webhook":
+        logger.info("Set mode: webhook")
+        await start_as_webhook(dp, bot)
+    elif config["BOT"]["MODE"] == "polling":
+        logger.info("Set mode: polling")
+        await bot.delete_webhook(drop_pending_updates=False)
+        await dp.start_polling(bot)
 
     # Stop bot
     logger.info("Finished VirtualCampBot!")
