@@ -31,31 +31,47 @@
 
 Проверено на сервере от RuVDS
 
+    #
+    # Begin from 'root' user
+    #
     adduser yurboc
     adduser yurboc sudo
 
+    #
+    # Login from 'yurboc' user
+    #
+
+    # Install packages
     sudo apt update
     sudo apt dist-upgrade
-    sudo apt install vim
+    sudo apt install python3 python-is-python3 python3-venv libaugeas0
+    sudo apt install vim git nginx postgresql redis rabbitmq-server
 
+    # Set SSH access by key
     ssh-keygen -t rsa
     cat ~/.ssh/id_rsa.pub
-    vim .ssh/authorized_keys
+    vim .ssh/authorized_keys # add public key
 
+    # Get source code
+    cd /home/yurboc
+    mkdir projects
+    git clone git@github.com:yurboc/virtual-camp.git
+
+    # Set timezone
     sudo timedatectl set-timezone Europe/Moscow
 
-    sudo apt install postgresql 
+    # Prepare DB
     sudo -i -u postgres
-    createuser --interactive # virtualcamp
+    createuser --interactive # create user 'virtualcamp'
     createdb virtualcamp_db
-    sudo vim /etc/postgresql/16/main/postgresql.conf # set timezone to Europe/Moscow
+    sudo vim /etc/postgresql/16/main/postgresql.conf # timezone -> Europe/Moscow
     psql virtualcamp_db -c 'SELECT pg_reload_conf()'
     psql virtualcamp_db
     # ALTER USER virtualcamp WITH PASSWORD 'your-password-here';
     # ALTER DATABASE virtualcamp_db OWNER TO virtualcamp;
     # exit
 
-    sudo apt install nginx python3 python-is-python3 python3-venv libaugeas0
+    # Create certificate
     sudo python3 -m venv /opt/certbot/
     sudo /opt/certbot/bin/pip install --upgrade pip
     sudo /opt/certbot/bin/pip install certbot certbot-nginx
@@ -64,36 +80,54 @@
     echo "0 0,12 * * * root /opt/certbot/bin/python -c 'import random; import time; time.sleep(random.random() * 3600)' && sudo certbot renew -q" | sudo tee -a /etc/crontab > /dev/null
     sudo /opt/certbot/bin/pip install --upgrade certbot certbot-nginx
 
-    sudo cp /etc/nginx/sites-available/default /etc/nginx/sites-available/default-old
-    sudo cp ~/projects/virtual-camp/examples/nginx/default /etc/nginx/sites-available/default
-    sudo cp ~/projects/virtual-camp/examples/nginx/telegram-webhook /etc/nginx/sites-available/
+    # Configure Nginx as reverse proxy
+    cd /etc/nginx/sites-available/
+    sudo mv default default-old
+    sudo cp ~/projects/virtual-camp/examples/nginx/default ./
+    sudo cp ~/projects/virtual-camp/examples/nginx/telegram-webhook ./
     cd /etc/nginx/sites-enabled
     sudo ln -s /etc/nginx/sites-available/telegram-webhook
-    sudo vim default
-    sudo vim telegram-webhook
+    sudo vim default # replace server info
+    sudo vim telegram-webhook # replace server info
     sudo service nginx restart
 
-    sudo apt install git redis rabbitmq-server
+    # Enable RabbitMQ management (for /info command)
     sudo rabbitmq-plugins enable rabbitmq_management
 
-    git clone git@github.com:yurboc/virtual-camp.git
-    
-    cd projects/virtual-camp
+    # Create virtual environment
+    cd /home/yurboc/projects/virtual-camp
     python -m venv venv
     source venv/bin/activate
+
+    # Install required Python modules
     python -m pip install --upgrade pip
     pip install -r requirements.txt
-    
-    cd src
+
+    #
+    # Create file src/config/config.yaml from config.default.yaml
+    #
+
+    #
+    # Create and run services (next chapter)
+    #
+
+    # Start bot, worker and notifier in interactive mode
+    cd /home/yurboc/projects/virtual-camp/src
     python -u notifier_main.py
     python -u worker_main.py
     python -u bot_main.py
+
+### Настройка окружения
+
+Файл *src/config/config.yaml* создаётся на основе *src/config/config.default.yaml*
+
+Файл *config.yaml* не добавляется в репозиторий, т.к. содежит логины и пароли.
 
 ### Устновка и запуск сервисов
 
 Проверено на Debian
 
-    cd examples/systemd
+    cd /home/yurboc/projects/virtual-camp/examples/systemd
     sudo cp virtualcamp-*.service /etc/systemd/system/
     sudo systemctl daemon-reload
     sudo systemctl enable virtualcamp-*.service
@@ -102,11 +136,12 @@
     sudo service virtualcamp-notifier status
     sudo service virtualcamp-worker status
 
-### Настройка окружения
+### Обновление и перезапуск сервисов
 
-Файл *src/config/config.yaml* создаётся на основе *src/config/config.default.yaml*
+Проверено на Debian
 
-Файл *config.yaml* не добавляется в репозиторий, т.к. содежит логины и пароли.
+    cd /home/yurboc/projects/virtual-camp
+    ./sync.sh # requires user password
 
 ## Удаление
 
@@ -118,6 +153,13 @@
     sudo systemctl disable virtualcamp-bot.service
     sudo rm /etc/systemd/system/virtualcamp-*.service
     sudo systemctl daemon-reload
+
+Удаление исходного кода:
+
+    cd /home/yurboc/projects
+    rm -rf virtual-camp
+
+Далее можно удалить все модули, установленные через apt install
 
 ## Тестирование
 
