@@ -125,7 +125,7 @@ yes_no_kb = ReplyKeyboardMarkup(
 )
 
 # AGREEMENT KEYBOARD
-agreement_kb = ReplyKeyboardMarkup(
+agree_kb = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text=cmd["agree"]), KeyboardButton(text=cmd["disagree"])]
     ],

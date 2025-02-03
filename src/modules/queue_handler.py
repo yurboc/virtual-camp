@@ -92,20 +92,19 @@ class QueueHandler:
             abonement_visits = await db.abonement_visits_list(abonement.id, desc=False)
             if not abonement_visits:
                 logger.info("Abonement %s has no visits", self.abonement_id)
-                return False
             else:
                 logger.info("Abonement has %s visit(s)", len(abonement_visits))
-            visits = list()
-            for visit in abonement_visits:
-                user = await db.user_by_id(visit.user_id)
-                visits.append(
-                    (
-                        visit.id,
-                        visit.ts.strftime(date_h_m_fmt),
-                        user.name if user and user.name else "",
+                visits = list()
+                for visit in abonement_visits:
+                    user = await db.user_by_id(visit.user_id)
+                    visits.append(
+                        (
+                            visit.id,
+                            visit.ts.strftime(date_h_m_fmt),
+                            user.name if user and user.name else "",
+                        )
                     )
-                )
-            self.google.visitsUpdateAll(visits)
+                self.google.visitsUpdateAll(visits)
             # Notify user
             if not need_notify:
                 logger.info("Skip sending link to user")

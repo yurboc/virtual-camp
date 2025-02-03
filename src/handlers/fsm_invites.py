@@ -12,7 +12,8 @@ from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.formatting import Bold, Code, as_list, as_key_value
 from storage.db_api import Database
 from const.states import InvitesGroup
-from const.text import cmd, msg, help, date_h_m_s_fmt
+from const.text import cmd, msg, help
+from const.formats import date_h_m_s_fmt
 from const.groups import groups
 
 logger = logging.getLogger(__name__)

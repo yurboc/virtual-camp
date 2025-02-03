@@ -26,9 +26,9 @@ async def process_register_command(
     logger.info("FSM: register: entering register mode")
     await state.set_state(RegisterGroup.agreement)
     if "registered" in user_type:
-        await message.answer(**reg_main_edit.as_kwargs(), reply_markup=kb.agreement_kb)
+        await message.answer(**reg_main_edit().as_kwargs(), reply_markup=kb.agree_kb)
     else:
-        await message.answer(**reg_main.as_kwargs(), reply_markup=kb.agreement_kb)
+        await message.answer(**reg_main().as_kwargs(), reply_markup=kb.agree_kb)
 
 
 # Command /cancel in register state
@@ -41,7 +41,9 @@ async def process_cancel_command(
 ):
     logger.info("FSM: register: cancel command")
     await state.clear()
-    await message.answer(**reg_end.as_kwargs(), reply_markup=kb.get_main_kb(user_type))
+    await message.answer(
+        **reg_end().as_kwargs(), reply_markup=kb.get_main_kb(user_type)
+    )
 
 
 # Command /help in register state
@@ -58,14 +60,14 @@ async def process_help_command(message: Message):
 async def process_agreement(message: Message, state: FSMContext) -> None:
     logger.info("FSM: register: agreement")
     await state.set_state(RegisterGroup.phone)
-    await message.answer(**reg_phone.as_kwargs(), reply_markup=kb.get_contact_kb)
+    await message.answer(**reg_phone().as_kwargs(), reply_markup=kb.get_contact_kb)
 
 
 # Wrong agreement
 @router.message(StateFilter(RegisterGroup.agreement))
 async def process_disagreement(message: Message, state: FSMContext) -> None:
     logger.info("FSM: register: disagreement")
-    await message.answer(text=msg["reg_no_agree"], reply_markup=kb.agreement_kb)
+    await message.answer(text=msg["reg_no_agree"], reply_markup=kb.agree_kb)
 
 
 # Got phone number

@@ -1,15 +1,15 @@
 # Telegram webhook server configuration
 #
-server {
+server { # !!! SET YOUR DOMAIN NAME HERE !!!
     listen [::]:443 ssl ipv6only=on; # managed by Certbot
     listen 443 ssl; # managed by Certbot
-    ssl_certificate /etc/letsencrypt/live/vps-3.yurboc.ru/fullchain.pem; # managed by Certbot
-    ssl_certificate_key /etc/letsencrypt/live/vps-3.yurboc.ru/privkey.pem; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/your-domain-name-here.ru/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/your-domain-name-here.ru/privkey.pem; # managed by Certbot
     include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
 
     index index.html index.htm index.nginx-debian.443.html index.nginx-debian.html;
-    server_name vps-3.yurboc.ru; # managed by Certbot
+    server_name your-domain-name-here.ru; # managed by Certbot
     root /var/www/html;
 
     location / {

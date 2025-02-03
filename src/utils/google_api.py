@@ -253,7 +253,7 @@ class GoogleApi:
                 ],
             },
         ).execute()
-        logger.info("Done updating table: %s")
+        logger.info("Done updating table")
         # Rename file
         self.service_drive.files().update(
             fileId=self.spreadsheetId, body={"name": abonement_name or "wrong_name"}

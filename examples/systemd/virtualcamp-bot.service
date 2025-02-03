@@ -3,7 +3,7 @@ Description=Virtual Camp Telegram Bot
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/python bot_main.py
+ExecStart=/home/yurboc/projects/virtual-camp/venv/bin/python bot_main.py
 WorkingDirectory=/home/yurboc/projects/virtual-camp/src/
 User=yurboc
 Group=yurboc

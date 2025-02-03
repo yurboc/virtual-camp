@@ -3,7 +3,7 @@ Description=Virtual Camp Worker
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/python worker_main.py
+ExecStart=/home/yurboc/projects/virtual-camp/venv/bin/python worker_main.py
 WorkingDirectory=/home/yurboc/projects/virtual-camp/src/
 User=yurboc
 Group=yurboc

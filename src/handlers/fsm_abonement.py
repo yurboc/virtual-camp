@@ -1,5 +1,6 @@
 import logging
 import keyboards.reply as kb
+import keyboards.inline as ikb
 import re
 from aiogram import F, Router
 from aiogram.types import Message
@@ -120,7 +121,7 @@ async def process_my_abonements_command(
         # Show abonements list
         await message.answer(
             **as_list(*nodes).as_kwargs(),
-            reply_markup=kb.get_abonement_list_kb(my, other),
+            reply_markup=ikb.get_abonement_list_kb(my, other),
         )
     else:
         # No abonements found
@@ -319,6 +320,7 @@ async def process_good_description_abonement_command(
         return
     # Save UPDATED Abonement
     if abonement_id:
+        is_update = True
         abonement = await db.abonement_edit(
             abonement_id=abonement_id,
             name=abonement_name,
@@ -335,6 +337,7 @@ async def process_good_description_abonement_command(
             )
     # Save NEW Abonement
     else:
+        is_update = False
         abonement = await db.abonement_create(
             name=abonement_name,
             owner=user,
@@ -362,7 +365,7 @@ async def process_good_description_abonement_command(
         return
     # Show info about Abonement
     key = abonement.token
-    if abonement_id:
+    if is_update:
         # EDITED Abonement info
         await message.answer(
             **as_list(

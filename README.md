@@ -27,13 +27,67 @@
 
 ## Установка
 
-### Установка зависимостей
+### Подготовка сервера
 
-Проверено на Python 3.9.2
+Проверено на сервере от RuVDS
 
-    sudo apt install python3
+    adduser yurboc
+    adduser yurboc sudo
+
+    sudo apt update
+    sudo apt dist-upgrade
+    sudo apt install vim
+
+    ssh-keygen -t rsa
+    cat ~/.ssh/id_rsa.pub
+    vim .ssh/authorized_keys
+
+    sudo timedatectl set-timezone Europe/Moscow
+
+    sudo apt install postgresql 
+    sudo -i -u postgres
+    createuser --interactive # virtualcamp
+    createdb virtualcamp_db
+    sudo vim /etc/postgresql/16/main/postgresql.conf # set timezone to Europe/Moscow
+    psql virtualcamp_db -c 'SELECT pg_reload_conf()'
+    psql virtualcamp_db
+    # ALTER USER virtualcamp WITH PASSWORD 'your-password-here';
+    # ALTER DATABASE virtualcamp_db OWNER TO virtualcamp;
+    # exit
+
+    sudo apt install nginx python3 python-is-python3 python3-venv libaugeas0
+    sudo python3 -m venv /opt/certbot/
+    sudo /opt/certbot/bin/pip install --upgrade pip
+    sudo /opt/certbot/bin/pip install certbot certbot-nginx
+    sudo ln -s /opt/certbot/bin/certbot /usr/bin/certbot
+    sudo certbot --nginx
+    echo "0 0,12 * * * root /opt/certbot/bin/python -c 'import random; import time; time.sleep(random.random() * 3600)' && sudo certbot renew -q" | sudo tee -a /etc/crontab > /dev/null
+    sudo /opt/certbot/bin/pip install --upgrade certbot certbot-nginx
+
+    sudo cp /etc/nginx/sites-available/default /etc/nginx/sites-available/default-old
+    sudo cp ~/projects/virtual-camp/examples/nginx/default /etc/nginx/sites-available/default
+    sudo cp ~/projects/virtual-camp/examples/nginx/telegram-webhook /etc/nginx/sites-available/
+    cd /etc/nginx/sites-enabled
+    sudo ln -s /etc/nginx/sites-available/telegram-webhook
+    sudo vim default
+    sudo vim telegram-webhook
+    sudo service nginx restart
+
+    sudo apt install git redis rabbitmq-server
+    sudo rabbitmq-plugins enable rabbitmq_management
+
+    git clone git@github.com:yurboc/virtual-camp.git
+    
+    cd projects/virtual-camp
+    python -m venv venv
+    source venv/bin/activate
     python -m pip install --upgrade pip
     pip install -r requirements.txt
+    
+    cd src
+    python -u notifier_main.py
+    python -u worker_main.py
+    python -u bot_main.py
 
 ### Устновка и запуск сервисов
 

@@ -4,7 +4,8 @@ from datetime import datetime
 from typing import Optional
 from aiogram.utils.formatting import Text, Bold, Italic, Code
 from aiogram.utils.formatting import as_list, as_numbered_section, as_key_value
-from const.text import cmd, msg, date_fmt
+from const.text import cmd, msg
+from const.formats import date_fmt
 
 
 # Register new user: begin
