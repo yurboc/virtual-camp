@@ -20,7 +20,7 @@ GOOGLE:
     ABONEMENT_FILE_NAME: abonement_{0:04d}
     ABONEMENT_INFO_RANGE: Посещения!F2:G7
     ABONEMENT_VISIT_START: Посещения!A2
-    ABONEMENT_VISIT_RANGE: Посещения!C2:C
+    ABONEMENT_VISIT_RANGE: Посещения!A2:D
     ABONEMENT_VISIT_ROW: Посещения!A{}:D{}
   CRED:
     type: service_account
@@ -57,7 +57,7 @@ DB:
   TYPE: postgresql+asyncpg # async: postgresql+asyncpg, sync: postgresql+psycopg2
   NAME: your_database_name
   HOST: localhost
-  USER: your_username
+  USERNAME: your_username
   PASSWORD: your_password
 
 RABBITMQ:
