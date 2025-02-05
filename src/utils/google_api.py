@@ -228,7 +228,7 @@ class GoogleApi:
         abonement_name: Optional[str],
         token: Optional[str],
         expiry_date: Optional[str],
-        total_visits: Optional[Union[int | str]],
+        total_visits: Optional[Union[int, str]],
         description: Optional[str],
         owner_name: Optional[str],
     ) -> None:
