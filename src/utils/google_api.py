@@ -4,7 +4,7 @@ import logging
 import apiclient.discovery
 from dateutil import parser
 from google.oauth2.service_account import Credentials
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Union
 from utils.config import config
 from const.formats import date_h_m_s_fmt
 
@@ -228,7 +228,7 @@ class GoogleApi:
         abonement_name: Optional[str],
         token: Optional[str],
         expiry_date: Optional[str],
-        total_visits: Optional[int | str],
+        total_visits: Optional[Union[int | str]],
         description: Optional[str],
         owner_name: Optional[str],
     ) -> None:
