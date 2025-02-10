@@ -1,3 +1,4 @@
+import sentry_sdk
 import json
 import os
 import pika
@@ -5,6 +6,9 @@ from utils.config import config
 from utils.log import setup_logger
 from modules.table_creator import TableCreator
 from modules.picture_creator import PictureCreator
+
+# Setup Sentry
+sentry_sdk.init(config["SENTRY"]["DSN"])
 
 # Setup logging
 logger = setup_logger(

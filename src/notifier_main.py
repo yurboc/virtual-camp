@@ -1,3 +1,4 @@
+import sentry_sdk
 import asyncio
 import os
 from sqlalchemy import URL
@@ -6,6 +7,9 @@ from utils.config import config
 from storage.db_schema import Base
 from modules.queue_consumer import QueueConsumer
 from utils.log import setup_logger
+
+# Setup Sentry
+sentry_sdk.init(config["SENTRY"]["DSN"])
 
 # Setup logging
 logger = setup_logger(

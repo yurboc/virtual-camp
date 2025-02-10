@@ -1,3 +1,4 @@
+import sentry_sdk
 import asyncio
 import os
 import aiohttp
@@ -25,6 +26,9 @@ from handlers import (
     fsm_abonement,
     other_handlers,
 )
+
+# Setup Sentry
+sentry_sdk.init(config["SENTRY"]["DSN"])
 
 # Setup logging
 logger = setup_logger(
