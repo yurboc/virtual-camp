@@ -18,7 +18,7 @@ async def handle_abonement(token: str, db: Database, user_id: int) -> tuple[bool
         return False, Text(msg["ab_wrong_owner"])
     # Check user is not already in Abonement
     if await db.abonement_user(user_id=user_id, abonement_id=abonement.id):
-        return False, Text(msg["ab_already_joined"])
+        return False, Text(msg["ab_join_already"])
     # Add user to Abonement
     res = await db.abonement_user_add(
         user_id=user_id, abonement_id=abonement.id, abonement_token=abonement.token
