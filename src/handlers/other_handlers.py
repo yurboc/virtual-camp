@@ -32,7 +32,7 @@ async def send_cancel_answer(message: Message):
 async def process_help_command(message: Message, user_type: list[str]) -> None:
     logger.info("Got HELP command")
     help = top_level_help(user_type)
-    await message.answer(**help.as_kwargs())
+    await message.answer(**help.as_kwargs(), disable_web_page_preview=True)
 
 
 # Default handler (for all other messages)

@@ -420,6 +420,7 @@ async def callbacks_abonement_share(
                 ),
             ).as_kwargs(),
             reply_markup=kb.get_abonement_kb(),
+            disable_web_page_preview=True,
         )
 
 
