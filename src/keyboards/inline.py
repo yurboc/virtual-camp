@@ -14,21 +14,14 @@ class AbonementCallbackFactory(CallbackData, prefix="abonement"):
     action: str
 
 
-# ABONEMENT LIST MENU
-def get_abonement_list_kb(
-    my_abonements: Sequence[TgAbonement], other_abonements: Sequence[TgAbonement]
+# ABONEMENT LIST MENU for TgAbonement items
+def get_abonement_items_kb(
+    abonements: list[TgAbonement],
 ) -> Optional[InlineKeyboardMarkup]:
-    if not my_abonements and not other_abonements:
+    if not abonements:
         return None
     builder = InlineKeyboardBuilder()
-    for abonement in my_abonements:
-        builder.button(
-            text=abonement.name,
-            callback_data=AbonementCallbackFactory(
-                id=abonement.id, token=abonement.token, action="open"
-            ),
-        )
-    for abonement in other_abonements:
+    for abonement in abonements:
         builder.button(
             text=abonement.name,
             callback_data=AbonementCallbackFactory(
@@ -37,6 +30,18 @@ def get_abonement_list_kb(
         )
     builder.adjust(1)
     return builder.as_markup()
+
+
+# ABONEMENT LIST MENU
+def get_abonement_list_kb(
+    my_abonements: Sequence[TgAbonement], other_abonements: Sequence[TgAbonement]
+) -> Optional[InlineKeyboardMarkup]:
+    abonements = []
+    for abonement in my_abonements:
+        abonements.append(abonement)
+    for abonement in other_abonements:
+        abonements.append(abonement)
+    return get_abonement_items_kb(abonements)
 
 
 # ABONEMENT CONTROL MENU

@@ -1,8 +1,10 @@
 import logging
 import keyboards.reply as kb
+import keyboards.inline as ikb
 import re
+from typing import Optional, Union
 from aiogram import Router
-from aiogram.types import Message
+from aiogram.types import Message, InlineKeyboardMarkup, ReplyKeyboardMarkup
 from aiogram.filters import CommandStart, CommandObject, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
@@ -32,8 +34,13 @@ async def start_with_deep_link_handler(
     await state.clear()
     # Mode 'abonement': try to join to Abonement of another user
     if len(args) == 2 and args[0] == "abonement" and re.search(re_uuid, args[1]):
-        _, text = await dl.handle_abonement(args[1], db, user_id)
-        await message.answer(**text.as_kwargs(), reply_markup=kb.get_main_kb(user_type))
+        abonement, text = await dl.handle_abonement(args[1], db, user_id)
+        answer_kb: Optional[Union[InlineKeyboardMarkup, ReplyKeyboardMarkup]] = None
+        if abonement:
+            answer_kb = ikb.get_abonement_items_kb([abonement])
+        else:
+            answer_kb = kb.get_main_kb(user_type)
+        await message.answer(**text.as_kwargs(), reply_markup=answer_kb)
     # Mode 'invite': add user to priveleged group
     elif len(args) == 2 and args[0] == "invite" and re.search(re_uuid, args[1]):
         _, text = await dl.handle_invite(args[1], db, user_id, user_type)

@@ -6,6 +6,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.filters import StateFilter
 from aiogram.filters import or_f
 from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import default_state
 from aiogram.utils.formatting import Text, Bold, Italic, TextLink, as_list, as_key_value
 from aiogram.utils.deep_linking import create_start_link
 from const.states import MainGroup, AbonementGroup
@@ -26,6 +27,7 @@ router = Router(name=__name__)
     or_f(
         StateFilter(MainGroup.abonement_mode),
         StateFilter(AbonementGroup.open),
+        StateFilter(default_state),  # for deep linking
     ),
     AbonementCallbackFactory.filter(F.action == "open"),
 )
