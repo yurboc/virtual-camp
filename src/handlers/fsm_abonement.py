@@ -407,9 +407,14 @@ async def process_good_description_abonement_command(
                     if message.bot
                     else Bold(msg["unavailable"])
                 ),
-            ).as_kwargs()
+            ).as_kwargs(),
+            disable_web_page_preview=True,
         )
-    await message.answer(msg["abonement_main"], reply_markup=kb.get_abonement_kb())
+    await message.answer(
+        msg["abonement_main"],
+        reply_markup=kb.get_abonement_kb(),
+        disable_web_page_preview=True,
+    )
 
 
 # Add or Edit Abonement: WRONG description

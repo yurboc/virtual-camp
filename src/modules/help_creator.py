@@ -1,4 +1,4 @@
-from aiogram.utils.formatting import Text, Bold, as_list
+from aiogram.utils.formatting import Text, Bold, as_list, TextLink
 from const.text import help
 
 
@@ -29,8 +29,12 @@ def top_level_help(user_type: list[str] = ["unknown"]) -> Text:
     # Bot owner information
     tokens.append(Bold(help["owner_group"]))
     tokens.append(Text(help["owner_info"]))
-    tokens.append(Text(help["owner_github"]))
-    tokens.append(Text(help["owner_link"]))
+    tokens.append(
+        Text(
+            help["owner_github"],
+            TextLink(help["owner_project"], url=help["owner_link"]),
+        )
+    )
     # Combine help in one list
     res = as_list(*tokens)
     return res
