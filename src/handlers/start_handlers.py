@@ -32,6 +32,7 @@ async def start_with_deep_link_handler(
     args = command.args.split("_") if command.args else []
     # Clear state and return to main menu
     await state.clear()
+    await message.answer(msg["linking_main"], reply_markup=kb.get_main_kb(user_type))
     # Mode 'abonement': try to join to Abonement of another user
     if len(args) == 2 and args[0] == "abonement" and re.search(re_uuid, args[1]):
         abonement, text = await dl.handle_abonement(args[1], db, user_id)
