@@ -161,7 +161,7 @@ def ab_del_ask(user_is_owner: bool, name: str) -> Text:
             " его",
         ),
         "",
-        "/cancel - отменить удаление абонемента",
+        "/cancel - отменить",
     )
     return res
 
